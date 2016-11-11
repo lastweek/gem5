@@ -1,0 +1,1056 @@
+./agen_unit.cc:    DynInstPtr inst = reqs[slot_num]->inst;
+./agen_unit.cc:    ThreadID tid = inst->readTid();
+./agen_unit.cc:    InstSeqNum seq_num = inst->seqNum;
+./agen_unit.cc:    if (inst->fault != NoFault) {
+./agen_unit.cc:                "next stage.\n", tid, inst->seqNum, inst->fault->name(),
+./agen_unit.cc:                inst->pcState());
+./agen_unit.cc:        agen_req->done();
+./agen_unit.cc:    switch (agen_req->cmd)
+./agen_unit.cc:            if (inst->isMemRef()) {
+./agen_unit.cc:                        tid, seq_num, inst->staticInst->getName());
+./agen_unit.cc:                inst->fault = inst->calcEA();
+./agen_unit.cc:                inst->setMemAddr(inst->getEA());
+./agen_unit.cc:                    tid, seq_num, inst->getEA());
+./agen_unit.cc:                if (inst->fault == NoFault) {
+./agen_unit.cc:                    agen_req->done();
+./agen_unit.cc:                          inst->fault->name(), seq_num, inst->instName());
+./agen_unit.cc:                        "[tid:] Ignoring non-memory instruction [sn:%i]\n",
+./agen_unit.cc:                agen_req->done();
+./bpred_unit.cc: * Copyright (c) 2004-2005 The Regents of The University of Michigan
+./bpred_unit.cc:      BTB(params->BTBEntries, params->BTBTagSize, params->instShiftAmt)
+./bpred_unit.cc:    if (params->predType == "local") {
+./bpred_unit.cc:        localBP = new LocalBP(params->localPredictorSize,
+./bpred_unit.cc:                              params->localCtrBits,
+./bpred_unit.cc:                              params->instShiftAmt);
+./bpred_unit.cc:    } else if (params->predType == "tournament") {
+./bpred_unit.cc:        tournamentBP = new TournamentBP(params->localPredictorSize,
+./bpred_unit.cc:                                        params->localCtrBits,
+./bpred_unit.cc:                                        params->localHistoryTableSize,
+./bpred_unit.cc:                                        params->localHistoryBits,
+./bpred_unit.cc:                                        params->globalPredictorSize,
+./bpred_unit.cc:                                        params->globalHistoryBits,
+./bpred_unit.cc:                                        params->globalCtrBits,
+./bpred_unit.cc:                                        params->choicePredictorSize,
+./bpred_unit.cc:                                        params->choiceCtrBits,
+./bpred_unit.cc:                                        params->instShiftAmt);
+./bpred_unit.cc:        RAS[i].init(params->RASSize);
+./bpred_unit.cc:    return res->name();
+./bpred_unit.cc:    int asid = inst->asid;
+./bpred_unit.cc:            "prediction\n", tid, inst->seqNum,
+./bpred_unit.cc:            inst->staticInst->disassemble(inst->instAddr()),
+./bpred_unit.cc:            inst->pcState());
+./bpred_unit.cc:    if (inst->isUncondCtrl()) {
+./bpred_unit.cc:        if (inst->isReturn() && RAS[tid].empty()) {
+./bpred_unit.cc:    PredictorHistory predict_record(inst->seqNum, predPC, pred_taken,
+./bpred_unit.cc:        if (inst->isReturn()) {
+./bpred_unit.cc:            target = TheISA::buildRetPC(inst->pcState(), rasTop);
+./bpred_unit.cc:                    tid, inst->pcState(), target,
+./bpred_unit.cc:            if (inst->isCall()) {
+./bpred_unit.cc:                RAS[tid].push(inst->pcState());
+./bpred_unit.cc:                        tid, inst->pcState(), predPC,
+./bpred_unit.cc:            if (inst->isCall() &&
+./bpred_unit.cc:                inst->isUncondCtrl() &&
+./bpred_unit.cc:                inst->isDirectCtrl()) {
+./bpred_unit.cc:                target = inst->branchTarget();
+./bpred_unit.cc:                        tid, asid, inst->pcState(), target);
+./bpred_unit.cc:            tid, inst->seqNum, predPC);
+./bpred_unit.cc:            tid, inst->seqNum, predHist[tid].size());
+./bpred_unit.cc:        tournamentBP->uncondBr(bp_history);
+./bpred_unit.cc:        localBP->squash(bp_history);
+./bpred_unit.cc:        tournamentBP->squash(bp_history);
+./bpred_unit.cc:        return localBP->lookup(inst_PC, bp_history);
+./bpred_unit.cc:        return tournamentBP->lookup(inst_PC, bp_history);
+./bpred_unit.cc:        localBP->update(inst_PC, taken, bp_history);
+./bpred_unit.cc:        tournamentBP->update(inst_PC, taken, bp_history, squashed);
+./bpred_unit.hh: * Copyright (c) 2004-2005 The Regents of The University of Michigan
+./bpred_unit.hh:     * The per-thread predictor history. This is used to update the predictor
+./bpred_unit.hh:    /** The per-thread return address stack. */
+./branch_predictor.cc:    DynInstPtr inst = bpred_req->inst;
+./branch_predictor.cc:    if (inst->fault != NoFault) {
+./branch_predictor.cc:                "next stage.\n", inst->readTid(), inst->seqNum, inst->fault->name(),
+./branch_predictor.cc:                inst->pcState());
+./branch_predictor.cc:        bpred_req->done();
+./branch_predictor.cc:    if (!inst->isControl()) {
+./branch_predictor.cc:                inst->instName());
+./branch_predictor.cc:        bpred_req->done();
+./branch_predictor.cc:    ThreadID tid = inst->readTid();
+./branch_predictor.cc:    InstSeqNum seq_num = inst->seqNum;
+./branch_predictor.cc:    switch (bpred_req->cmd)
+./branch_predictor.cc:            if (inst->seqNum > cpu->squashSeqNum[tid] &&
+./branch_predictor.cc:                curTick() == cpu->lastSquashCycle[tid]) {
+./branch_predictor.cc:                        "skipping prediction \n", tid, inst->seqNum);
+./branch_predictor.cc:                TheISA::PCState pred_PC = inst->pcState();
+./branch_predictor.cc:                TheISA::advancePC(pred_PC, inst->staticInst);
+./branch_predictor.cc:                if (inst->isControl()) {
+./branch_predictor.cc:                    inst->setBranchPred(predict_taken);
+./branch_predictor.cc:                inst->setPredTarg(pred_PC);
+./branch_predictor.cc:                        "%s.\n", tid, seq_num, inst->instName(), pred_PC);
+./branch_predictor.cc:            bpred_req->done();
+./branch_predictor.cc:            if (inst->seqNum > cpu->squashSeqNum[tid] &&
+./branch_predictor.cc:                curTick() == cpu->lastSquashCycle[tid]) {
+./branch_predictor.cc:                        tid, inst->seqNum);
+./branch_predictor.cc:            bpred_req->done();
+./branch_predictor.cc:    InstSeqNum bpred_squash_num = inst->seqNum;
+./branch_predictor.cc:                          inst->pcState(),
+./branch_predictor.cc:                          inst->pcState().branching(),
+./cache_unit.cc:    // Hard-Code Selection For Now
+./cache_unit.cc:        _tlb = params->itb;
+./cache_unit.cc:        _tlb = params->dtb;
+./cache_unit.cc:        cachePort = &cpu->getInstPort();
+./cache_unit.cc:        cachePort = &cpu->getDataPort();
+./cache_unit.cc:    cacheBlkSize = cachePort->peerBlockSize();
+./cache_unit.cc:    cacheBlkMask = cacheBlkSize  - 1;
+./cache_unit.cc:    ThreadID tid = inst->readTid();
+./cache_unit.cc:        return -1;
+./cache_unit.cc:    // For a Split-Load, the instruction would have processed once already
+./cache_unit.cc:    if (!inst->validMemAddr() && !inst->splitInst) {
+./cache_unit.cc:              "cache access\n", inst->readTid(), inst->seqNum);
+./cache_unit.cc:    inst->memTime = curTick();
+./cache_unit.cc:    Addr req_addr = inst->getMemAddr();
+./cache_unit.cc:    ThreadID tid = inst->readTid();
+./cache_unit.cc:    addrMap[tid][req_addr] = inst->seqNum;
+./cache_unit.cc:            inst->readTid(), inst->seqNum, req_addr, addrList[tid].size());
+./cache_unit.cc:    ThreadID tid = inst->readTid();
+./cache_unit.cc:    Addr mem_addr = inst->getMemAddr();
+./cache_unit.cc:    inst->unsetMemAddr();
+./cache_unit.cc:    assert(list_it != addrList[tid].end() || inst->splitInst);
+./cache_unit.cc:                "list\n", inst->readTid(), inst->seqNum, (*list_it));
+./cache_unit.cc:        if (cache_req->valid &&
+./cache_unit.cc:            cache_req->getInst() == inst &&
+./cache_unit.cc:            cache_req->instIdx == inst->curSkedEntry->idx) {
+./cache_unit.cc:        if (cache_req->valid &&
+./cache_unit.cc:            cache_req->getInst() == inst &&
+./cache_unit.cc:            cache_req->instIdx == idx) {
+./cache_unit.cc:    ScheduleEntry* sched_entry = *inst->curSkedEntry;
+./cache_unit.cc:    if (!inst->validMemAddr()) {
+./cache_unit.cc:    switch (sched_entry->cmd)
+./cache_unit.cc:                inst->readTid(), inst->seqNum, inst->split2ndAddr);
+./cache_unit.cc:                inst->readTid(), inst->seqNum, inst->getMemAddr());
+./cache_unit.cc:                inst->readTid(), inst->seqNum, inst->split2ndAddr);
+./cache_unit.cc:                inst->readTid(), inst->seqNum, inst->getMemAddr());
+./cache_unit.cc:              sched_entry->cmd, name());
+./cache_unit.cc:    cache_req->setRequest(inst, stage_num, id, slot_num,
+./cache_unit.cc:                          sched_entry->cmd, pkt_cmd,
+./cache_unit.cc:                          inst->curSkedEntry->idx);
+./cache_unit.cc:    if (cache_req->cmd != inst->curSkedEntry->cmd &&
+./cache_unit.cc:        cache_req->instIdx == inst->curSkedEntry->idx) {
+./cache_unit.cc:        cache_req->cmd = inst->curSkedEntry->cmd;
+./cache_unit.cc:                "instruction\n", inst->readTid(), inst->seqNum);
+./cache_unit.cc:    } else if (inst->curSkedEntry->idx != CacheUnit::InitSecondSplitRead &&
+./cache_unit.cc:               inst->curSkedEntry->idx != CacheUnit::InitSecondSplitWrite) {
+./cache_unit.cc:        // but dont try to re-execute
+./cache_unit.cc:                inst->readTid(), inst->seqNum);
+./cache_unit.cc:    ThreadID tid = inst->readTid();
+./cache_unit.cc:    Addr aligned_addr = inst->getMemAddr();
+./cache_unit.cc:    if (!cache_req->is2ndSplit()) {
+./cache_unit.cc:        if (cache_req->memReq == NULL) {
+./cache_unit.cc:            cache_req->memReq =
+./cache_unit.cc:                new Request(cpu->asid[tid], aligned_addr, acc_size, flags,
+./cache_unit.cc:                            cpu->dataMasterId(),
+./cache_unit.cc:                            inst->instAddr(),
+./cache_unit.cc:                            cpu->readCpuId(), //@todo: use context id
+./cache_unit.cc:        assert(inst->splitInst);
+./cache_unit.cc:        if (inst->splitMemReq == NULL) {
+./cache_unit.cc:            inst->splitMemReq = new Request(cpu->asid[tid], 
+./cache_unit.cc:                                            inst->split2ndAddr,
+./cache_unit.cc:                                            cpu->dataMasterId(),
+./cache_unit.cc:                                            inst->instAddr(),
+./cache_unit.cc:                                            cpu->readCpuId(), 
+./cache_unit.cc:        cache_req->memReq = inst->splitMemReq;
+./cache_unit.cc:    ThreadID tid = inst->readTid();
+./cache_unit.cc:    ThreadContext *tc = cpu->thread[tid]->getTC();
+./cache_unit.cc:    PCState old_pc = tc->pcState();
+./cache_unit.cc:    tc->pcState() = inst->pcState();
+./cache_unit.cc:    inst->fault =
+./cache_unit.cc:        _tlb->translateAtomic(cache_req->memReq, tc, tlb_mode);
+./cache_unit.cc:    tc->pcState() = old_pc;
+./cache_unit.cc:    if (inst->fault != NoFault) {
+./cache_unit.cc:                "addr:%08p for [sn:%i].\n", tid, inst->fault->name(),
+./cache_unit.cc:                cache_req->memReq->getVaddr(), inst->seqNum);
+./cache_unit.cc:        tlbBlockSeqNum[tid] = inst->seqNum;
+./cache_unit.cc:        inst->setSerializeAfter();
+./cache_unit.cc:        cache_req->setCompleted();
+./cache_unit.cc:                "to phys. addr:%08p.\n", tid, inst->seqNum,
+./cache_unit.cc:                cache_req->memReq->getVaddr(),
+./cache_unit.cc:                cache_req->memReq->getPaddr());
+./cache_unit.cc:    inst->totalSize = size;
+./cache_unit.cc:    if (inst->traceData) {
+./cache_unit.cc:        inst->traceData->setAddr(addr);
+./cache_unit.cc:    if (inst->split2ndAccess) {     
+./cache_unit.cc:        size = inst->split2ndSize;
+./cache_unit.cc:        cache_req->splitAccess = true;        
+./cache_unit.cc:        cache_req->split2ndAccess = true;
+./cache_unit.cc:                "(%#x, %#x).\n", inst->seqNum, inst->getMemAddr(),
+./cache_unit.cc:                inst->split2ndAddr);
+./cache_unit.cc:    Addr secondAddr = roundDown(addr + size - 1, blockSize);
+./cache_unit.cc:    if (secondAddr > addr && !inst->split2ndAccess) {
+./cache_unit.cc:        if (!inst->splitInst) {
+./cache_unit.cc:                    "(%#x, %#x).\n", curTick(), inst->seqNum, addr, secondAddr);
+./cache_unit.cc:            unsigned stage_num = cache_req->getStageNum();
+./cache_unit.cc:            unsigned cmd = inst->curSkedEntry->cmd;
+./cache_unit.cc:            inst->splitInst = true;
+./cache_unit.cc:            inst->setBackSked(cpu->createBackEndSked(inst));
+./cache_unit.cc:            inst->curSkedEntry = inst->backSked->find(stage_num, cmd);
+./cache_unit.cc:                    "Access (1 of 2) for (%#x, %#x).\n", inst->readTid(),
+./cache_unit.cc:                    inst->seqNum, addr, secondAddr);
+./cache_unit.cc:        inst->splitMemData = new uint8_t[size];
+./cache_unit.cc:        size = secondAddr - addr;
+./cache_unit.cc:        cache_req->splitAccess = true;
+./cache_unit.cc:        inst->split2ndSize = addr + fullSize - secondAddr;
+./cache_unit.cc:        inst->split2ndAddr = secondAddr;            
+./cache_unit.cc:        inst->split2ndDataPtr = inst->splitMemData + size;
+./cache_unit.cc:        inst->split2ndFlags = flags;        
+./cache_unit.cc:    if (inst->fault == NoFault) {
+./cache_unit.cc:        if (!cache_req->splitAccess) {            
+./cache_unit.cc:            cache_req->reqData = new uint8_t[size];
+./cache_unit.cc:            if (!inst->split2ndAccess) {                
+./cache_unit.cc:                cache_req->reqData = inst->splitMemData;
+./cache_unit.cc:                cache_req->reqData = inst->split2ndDataPtr;                
+./cache_unit.cc:    return inst->fault;
+./cache_unit.cc:    inst->totalSize = size;
+./cache_unit.cc:    if (inst->traceData) {
+./cache_unit.cc:        inst->traceData->setAddr(addr);
+./cache_unit.cc:    if (inst->split2ndAccess) {     
+./cache_unit.cc:        size = inst->split2ndSize;
+./cache_unit.cc:        cache_req->splitAccess = true;        
+./cache_unit.cc:        cache_req->split2ndAccess = true;
+./cache_unit.cc:                "(%#x, %#x).\n", inst->seqNum, inst->getMemAddr(),
+./cache_unit.cc:                inst->split2ndAddr);
+./cache_unit.cc:    Addr secondAddr = roundDown(addr + size - 1, blockSize);
+./cache_unit.cc:    if (secondAddr > addr && !inst->split2ndAccess) {
+./cache_unit.cc:                "(%#x, %#x).\n", inst->seqNum, addr, secondAddr);
+./cache_unit.cc:        inst->splitInst = true;        
+./cache_unit.cc:        if (!inst->splitInstSked) {
+./cache_unit.cc:            int stage_num = cache_req->getStageNum();
+./cache_unit.cc:                inst->backSked : inst->frontSked;
+./cache_unit.cc:            inst_sked->push(new
+./cache_unit.cc:                                          cpu->resPool->getResIdx(DCache),
+./cache_unit.cc:            inst_sked->push(new
+./cache_unit.cc:                                          cpu->resPool->getResIdx(DCache),
+./cache_unit.cc:            inst->splitInstSked = true;
+./cache_unit.cc:                    inst->readTid(), inst->seqNum, addr, secondAddr);                   
+./cache_unit.cc:        size = secondAddr - addr;
+./cache_unit.cc:        cache_req->splitAccess = true;
+./cache_unit.cc:        inst->split2ndSize = addr + fullSize - secondAddr;
+./cache_unit.cc:        inst->split2ndAddr = secondAddr;            
+./cache_unit.cc:        inst->split2ndFlags = flags;        
+./cache_unit.cc:        inst->splitInstSked = true;
+./cache_unit.cc:    if (inst->fault == NoFault) {
+./cache_unit.cc:        if (!cache_req->splitAccess) {
+./cache_unit.cc:            cache_req->reqData = new uint8_t[size];
+./cache_unit.cc:            memcpy(cache_req->reqData, data, size);
+./cache_unit.cc:            //inst->split2ndStoreDataPtr = cache_req->reqData;
+./cache_unit.cc:            //inst->split2ndStoreDataPtr += size;
+./cache_unit.cc:    return inst->fault;
+./cache_unit.cc:        (cache_req->cmd == InitiateReadData ||
+./cache_unit.cc:         cache_req->cmd == InitiateWriteData ||
+./cache_unit.cc:         cache_req->cmd == InitSecondSplitRead ||
+./cache_unit.cc:         cache_req->cmd == InitSecondSplitWrite)) {
+./cache_unit.cc:        cache_req->done(false);
+./cache_unit.cc:    DynInstPtr inst = cache_req->inst;
+./cache_unit.cc:    if (inst->fault != NoFault) {
+./cache_unit.cc:                "next stage.\n", inst->readTid(), inst->seqNum, inst->fault->name(),
+./cache_unit.cc:                inst->getMemAddr());
+./cache_unit.cc:    if (inst->isSquashed()) {
+./cache_unit.cc:                "next stage.\n", inst->readTid(), inst->seqNum);
+./cache_unit.cc:    ThreadID tid = inst->readTid();
+./cache_unit.cc:    switch (cache_req->cmd)
+./cache_unit.cc:            cache_req->done(false);
+./cache_unit.cc:                "addr. %08p\n", tid, inst->seqNum, acc_type, name(),
+./cache_unit.cc:                cache_req->inst->getMemAddr());
+./cache_unit.cc:        inst->setCurResSlot(slot_num);
+./cache_unit.cc:        if (inst->isDataPrefetch() || inst->isInstPrefetch()) {
+./cache_unit.cc:            inst->execute();
+./cache_unit.cc:            inst->initiateAcc();
+./cache_unit.cc:                "for addr. %08p\n", tid, inst->seqNum, name(),
+./cache_unit.cc:                cache_req->inst->split2ndAddr);
+./cache_unit.cc:        inst->split2ndAccess = true;
+./cache_unit.cc:        assert(inst->split2ndAddr != 0);
+./cache_unit.cc:        read(inst, inst->split2ndAddr, &inst->split2ndData,
+./cache_unit.cc:             inst->totalSize, inst->split2ndFlags);
+./cache_unit.cc:                "for addr. %08p\n", tid, inst->seqNum, name(),
+./cache_unit.cc:                cache_req->inst->getMemAddr());
+./cache_unit.cc:        inst->split2ndAccess = true;
+./cache_unit.cc:        assert(inst->split2ndAddr != 0);
+./cache_unit.cc:        write(inst, &inst->split2ndData, inst->totalSize,
+./cache_unit.cc:              inst->split2ndAddr, inst->split2ndFlags, NULL);
+./cache_unit.cc:                tid, inst->seqNum);
+./cache_unit.cc:        assert(!inst->isInstPrefetch() && "Can't Handle Inst. Prefecthes");
+./cache_unit.cc:        if (cache_req->isMemAccComplete() || inst->isDataPrefetch()) {
+./cache_unit.cc:                    tid, cache_req->inst->getMemAddr());
+./cache_unit.cc:            cache_req->setCompleted(false);
+./cache_unit.cc:            cache_req->setMemStall(true);            
+./cache_unit.cc:                    tid, inst->seqNum);
+./cache_unit.cc:            RequestPtr mem_req = cache_req->memReq;
+./cache_unit.cc:            if (mem_req->isCondSwap() || mem_req->isLLSC() || mem_req->isSwap()) {
+./cache_unit.cc:                if (!cache_req->isMemAccComplete()) {
+./cache_unit.cc:                            tid, cache_req->inst->getMemAddr());
+./cache_unit.cc:                    cache_req->setCompleted(false);
+./cache_unit.cc:                    cache_req->setMemStall(true);
+./cache_unit.cc:            if (cache_req->isMemAccPending()) {
+./cache_unit.cc:                cache_req->dataPkt->reqData = cache_req->reqData;
+./cache_unit.cc:                cache_req->dataPkt->memReq = cache_req->memReq;
+./cache_unit.cc:                "Access\n", tid, inst->seqNum);
+./cache_unit.cc:        assert(!inst->isInstPrefetch() && "Can't Handle Inst. Prefecthes");
+./cache_unit.cc:        if (cache_req->isMemAccComplete() || inst->isDataPrefetch()) {
+./cache_unit.cc:                    tid, cache_req->inst->split2ndAddr);
+./cache_unit.cc:            cache_req->setCompleted(false);
+./cache_unit.cc:            cache_req->setMemStall(true);            
+./cache_unit.cc:                "Access\n", tid, inst->seqNum);
+./cache_unit.cc:        assert(!cache_req->memReq->isSwap() && !cache_req->memReq->isCondSwap()
+./cache_unit.cc:               && !cache_req->memReq->isLLSC());
+./cache_unit.cc:        if (cache_req->isMemAccPending()) {
+./cache_unit.cc:            cache_req->dataPkt->reqData = cache_req->reqData;
+./cache_unit.cc:            cache_req->dataPkt->memReq = cache_req->memReq;
+./cache_unit.cc:    cache_req->setMemStall(false);
+./cache_unit.cc:    cache_req->done();
+./cache_unit.cc:    if (cache_req->memReq->isLLSC() && cache_req->pktCmd == MemCmd::ReadReq) {
+./cache_unit.cc:        cache_req->pktCmd = MemCmd::LoadLockedReq;
+./cache_unit.cc:    if (cache_req->pktCmd == MemCmd::WriteReq) {
+./cache_unit.cc:        cache_req->pktCmd =
+./cache_unit.cc:            cache_req->memReq->isSwap() ? MemCmd::SwapReq :
+./cache_unit.cc:            (cache_req->memReq->isLLSC() ? MemCmd::StoreCondReq 
+./cache_unit.cc:    cache_req->dataPkt = new CacheReqPacket(cache_req,
+./cache_unit.cc:                                            cache_req->pktCmd,
+./cache_unit.cc:                                            cache_req->instIdx);
+./cache_unit.cc:            cache_req->getSlot(),
+./cache_unit.cc:            cache_req->dataPkt->getAddr());
+./cache_unit.cc:    cache_req->dataPkt->hasSlot = true;
+./cache_unit.cc:    cache_req->dataPkt->dataStatic(cache_req->reqData);
+./cache_unit.cc:    ThreadID tid = inst->readTid();
+./cache_unit.cc:        cache_req = dynamic_cast<CacheReqPtr>(reqs[inst->getCurResSlot()]);
+./cache_unit.cc:     bool is_write = cache_req->dataPkt->isWrite();
+./cache_unit.cc:     RequestPtr mem_req = cache_req->dataPkt->req;
+./cache_unit.cc:                 tid, inst->seqNum,
+./cache_unit.cc:                 printMemData(cache_req->dataPkt->getPtr<uint8_t>(),
+./cache_unit.cc:                              cache_req->dataPkt->getSize()));
+./cache_unit.cc:        if (mem_req->isCondSwap()) {
+./cache_unit.cc:             cache_req->memReq->setExtraData(*write_res);
+./cache_unit.cc:        if (mem_req->isLLSC()) {
+./cache_unit.cc:            assert(cache_req->inst->isStoreConditional());
+./cache_unit.cc:            tid, inst->seqNum, cache_req->dataPkt->getAddr());
+./cache_unit.cc:        if (!cachePort->sendTimingReq(cache_req->dataPkt)) {
+./cache_unit.cc:                    inst->seqNum);
+./cache_unit.cc:            delete cache_req->dataPkt;
+./cache_unit.cc:            cache_req->dataPkt = NULL;
+./cache_unit.cc:            delete cache_req->memReq;
+./cache_unit.cc:            cache_req->memReq = NULL;
+./cache_unit.cc:            cache_req->done(false);
+./cache_unit.cc:                    tid, inst->seqNum);
+./cache_unit.cc:            cache_req->setCompleted();
+./cache_unit.cc:            cache_req->setMemAccPending();
+./cache_unit.cc:    } else if (mem_req->isLLSC()){
+./cache_unit.cc:        // Store-Conditional instructions complete even if they "failed"
+./cache_unit.cc:        assert(cache_req->inst->isStoreConditional());
+./cache_unit.cc:        cache_req->setCompleted(true);
+./cache_unit.cc:        processCacheCompletion(cache_req->dataPkt);
+./cache_unit.cc:        delete cache_req->dataPkt;
+./cache_unit.cc:        cache_req->dataPkt = NULL;
+./cache_unit.cc:        delete cache_req->memReq;
+./cache_unit.cc:        cache_req->memReq = NULL;
+./cache_unit.cc:        cache_req->done(false);
+./cache_unit.cc:    if (!cache_pkt->hasSlot) {
+./cache_unit.cc:                cache_pkt->getAddr());
+./cache_unit.cc:        if (cache_pkt->reqData) {
+./cache_unit.cc:            delete [] cache_pkt->reqData;
+./cache_unit.cc:            cache_pkt->reqData = NULL;
+./cache_unit.cc:        if (cache_pkt->memReq) {
+./cache_unit.cc:            delete cache_pkt->memReq;
+./cache_unit.cc:            cache_pkt->memReq = NULL;
+./cache_unit.cc:        cpu->wakeCPU();
+./cache_unit.cc:                cache_pkt->getAddr(), cache_pkt->cacheReq->getSlot());
+./cache_unit.cc:    if (cache_pkt->cacheReq->isSquashed()) {
+./cache_unit.cc:                cache_pkt->cacheReq->getInst()->readTid(),
+./cache_unit.cc:                cache_pkt->cacheReq->getInst()->seqNum);
+./cache_unit.cc:        cache_pkt->cacheReq->setMemAccPending(false);
+./cache_unit.cc:        cache_pkt->cacheReq->freeSlot();
+./cache_unit.cc:        cpu->wakeCPU();
+./cache_unit.cc:    DPRINTF(InOrderCachePort, "Finished request for %x\n", pkt->getAddr());
+./cache_unit.cc:        findRequest(cache_pkt->cacheReq->getInst(), cache_pkt->instIdx));
+./cache_unit.cc:              "addr. %08p\n", cache_pkt->cacheReq->getInst()->readTid(),
+./cache_unit.cc:              cache_pkt->cacheReq->getInst()->seqNum,
+./cache_unit.cc:              cache_pkt->cacheReq->getInst()->getMemAddr());
+./cache_unit.cc:    assert(cache_req == cache_pkt->cacheReq);
+./cache_unit.cc:            cache_pkt->cacheReq->getInst()->readTid(),
+./cache_unit.cc:            cache_pkt->cacheReq->getInst()->seqNum,
+./cache_unit.cc:            cache_req->getSlot(),
+./cache_unit.cc:            cache_pkt->req->getVaddr(),
+./cache_unit.cc:            cache_pkt->req->getPaddr());
+./cache_unit.cc:    unsigned stage_num = cache_req->getStageNum();
+./cache_unit.cc:    DynInstPtr inst = cache_req->inst;
+./cache_unit.cc:    ThreadID tid = cache_req->inst->readTid();
+./cache_unit.cc:    assert(!cache_req->isSquashed());
+./cache_unit.cc:    assert(inst->staticInst && inst->isMemRef());
+./cache_unit.cc:            tid, inst->seqNum);
+./cache_unit.cc:    if (inst->splitInst) {
+./cache_unit.cc:        inst->splitFinishCnt++;
+./cache_unit.cc:        if (inst->splitFinishCnt == 2) {
+./cache_unit.cc:            cache_req->memReq->setVirt(0/*inst->tid*/,
+./cache_unit.cc:                                       inst->getMemAddr(),
+./cache_unit.cc:                                       inst->totalSize,
+./cache_unit.cc:                                       cpu->dataMasterId(),
+./cache_unit.cc:            split_pkt = new Packet(cache_req->memReq, cache_req->pktCmd);
+./cache_unit.cc:            split_pkt->dataStatic(inst->splitMemData);
+./cache_unit.cc:            inst->completeAcc(split_pkt);
+./cache_unit.cc:        inst->completeAcc(cache_pkt);
+./cache_unit.cc:    inst->setExecuted();
+./cache_unit.cc:    if (inst->isLoad()) {
+./cache_unit.cc:        assert(cache_pkt->isRead());
+./cache_unit.cc:        if (cache_pkt->req->isLLSC()) {
+./cache_unit.cc:                    "[tid:%u]: Handling Load-Linked for [sn:%u]\n",
+./cache_unit.cc:                    tid, inst->seqNum);
+./cache_unit.cc:            TheISA::handleLockedRead(inst.get(), cache_pkt->req);
+./cache_unit.cc:                tid, inst->seqNum,
+./cache_unit.cc:                (split_pkt) ? printMemData(split_pkt->getPtr<uint8_t>(),
+./cache_unit.cc:                                           split_pkt->getSize()) :
+./cache_unit.cc:                              printMemData(cache_pkt->getPtr<uint8_t>(),
+./cache_unit.cc:                                           cache_pkt->getSize()));
+./cache_unit.cc:    } else if(inst->isStore()) {
+./cache_unit.cc:        assert(cache_pkt->isWrite());
+./cache_unit.cc:                tid, inst->seqNum,
+./cache_unit.cc:                (split_pkt) ? printMemData(split_pkt->getPtr<uint8_t>(),
+./cache_unit.cc:                                           split_pkt->getSize()) :
+./cache_unit.cc:                              printMemData(cache_pkt->getPtr<uint8_t>(),
+./cache_unit.cc:                                           cache_pkt->getSize()));
+./cache_unit.cc:    cache_req->setMemAccPending(false);
+./cache_unit.cc:    cache_req->setMemAccCompleted();
+./cache_unit.cc:    if (cache_req->isMemStall() &&
+./cache_unit.cc:        cpu->threadModel == InOrderCPU::SwitchOnCacheMiss) {
+./cache_unit.cc:        cpu->activateContext(tid);
+./cache_unit.cc:    cpu->wakeCPU();
+./cache_unit.cc:            tid, cpu->pipelineStage[stage_num]->name());
+./cache_unit.cc:    cpu->switchToActive(stage_num);
+./cache_unit.cc:    cpu->wakeCPU();
+./cache_unit.cc:    DynInstPtr inst = resource->reqs[slotIdx]->inst;
+./cache_unit.cc:    int stage_num = resource->reqs[slotIdx]->getStageNum();
+./cache_unit.cc:    ThreadID tid = inst->threadNumber;
+./cache_unit.cc:    CacheReqPtr req_ptr = dynamic_cast<CacheReqPtr>(resource->reqs[slotIdx]);
+./cache_unit.cc:            inst->seqNum);
+./cache_unit.cc:    DPRINTF(InOrderTLB, "Handling Fault %s : [sn:%i] %x\n", inst->fault->name(), inst->seqNum, inst->getMemAddr());
+./cache_unit.cc:    inst->fault->invoke(tlb_res->cpu->tcBase(tid), inst->staticInst);
+./cache_unit.cc:    tlb_res->tlbBlocked[tid] = false;
+./cache_unit.cc:    tlb_res->cpu->pipelineStage[stage_num]->
+./cache_unit.cc:        unsetResStall(tlb_res->reqs[slotIdx], tid);
+./cache_unit.cc:    req_ptr->tlbStall = false;
+./cache_unit.cc:    if (req_ptr->isSquashed()) {
+./cache_unit.cc:        req_ptr->freeSlot();
+./cache_unit.cc:    tlb_res->cpu->wakeCPU();
+./cache_unit.cc:    DynInstPtr inst =  req_ptr->getInst();
+./cache_unit.cc:    req_ptr->setSquashed();
+./cache_unit.cc:    inst->setSquashed();
+./cache_unit.cc:    /*if (inst->validMemAddr()) {
+./cache_unit.cc:                inst->readTid(),
+./cache_unit.cc:                inst->seqNum,
+./cache_unit.cc:                inst->getMemAddr());
+./cache_unit.cc:        if (req_ptr->valid &&
+./cache_unit.cc:            req_ptr->getInst()->readTid() == tid &&
+./cache_unit.cc:            req_ptr->getInst()->seqNum > squash_seq_num) {
+./cache_unit.cc:                    req_ptr->getInst()->readTid(), req_ptr->getInst()->seqNum);
+./cache_unit.cc:            if (req_ptr->isSquashed()) {
+./cache_unit.cc:                        req_ptr->getInst()->readTid(),
+./cache_unit.cc:                        req_ptr->getInst()->seqNum);
+./cache_unit.cc:            int req_slot_num = req_ptr->getSlot();
+./cache_unit.cc:            if (cache_req->tlbStall) {
+./cache_unit.cc:                int stall_stage = reqs[req_slot_num]->getStageNum();
+./cache_unit.cc:                cpu->pipelineStage[stall_stage]->
+./cache_unit.cc:            if (cache_req->isMemAccPending()) {
+./cache_unit.cc:                cache_req->dataPkt->reqData = cache_req->reqData;
+./cache_unit.cc:                cache_req->dataPkt->memReq = cache_req->memReq;
+./cache_unit.cc:            if (!cache_req->tlbStall)
+./cache_unit.cc:            dataPkt->hasSlot = false;
+./cache_unit.cc:    splitAccessNum = -1;
+./cache_unit.hh:           splitAccessNum(-1), split2ndAccess(false),
+./cache_unit.hh:        : Packet(&(*_req->memReq), _cmd), cacheReq(_req),
+./decode_unit.cc:        regDepMap[tid] = &cpu->archRegDepMap[tid];
+./decode_unit.cc:    DynInstPtr inst = reqs[slot_num]->inst;
+./decode_unit.cc:    switch (decode_req->cmd)
+./decode_unit.cc:            if (inst->fault != NoFault) {
+./decode_unit.cc:                inst->setBackSked(cpu->faultSked);
+./decode_unit.cc:                        inst->readTid(), inst->seqNum);
+./decode_unit.cc:                assert(!inst->staticInst->isMacroop());
+./decode_unit.cc:                inst->setBackSked(cpu->createBackEndSked(inst));
+./decode_unit.cc:                        inst->seqNum, inst->instName(),
+./decode_unit.cc:                        inst->staticInst->machInst);
+./decode_unit.cc:            if (inst->backSked != NULL) {
+./decode_unit.cc:                        inst->readTid(), inst->instName(), inst->seqNum);
+./decode_unit.cc:                decode_req->done();
+./decode_unit.cc:                        inst->readTid());
+./decode_unit.cc:                    inst->seqNum);
+./decode_unit.cc:                decode_req->done(false);
+./execution_unit.cc:    DynInstPtr inst = reqs[slot_num]->inst;
+./execution_unit.cc:    if (inst->fault != NoFault) {
+./execution_unit.cc:                "next stage.\n", inst->readTid(), inst->seqNum, inst->fault->name(),
+./execution_unit.cc:                inst->pcState());
+./execution_unit.cc:        exec_req->done();
+./execution_unit.cc:    unsigned stage_num = exec_req->getStageNum();
+./execution_unit.cc:    ThreadID tid = inst->readTid();
+./execution_unit.cc:    InstSeqNum seq_num = inst->seqNum;
+./execution_unit.cc:    switch (exec_req->cmd)
+./execution_unit.cc:            if (inst->isNop()) {
+./execution_unit.cc:                        "of %s.\n", inst->readTid(), seq_num, inst->pcState(),
+./execution_unit.cc:                        inst->instName());
+./execution_unit.cc:                inst->setExecuted();
+./execution_unit.cc:                exec_req->done();
+./execution_unit.cc:                        inst->readTid(), seq_num, inst->pcState(), inst->instName());
+./execution_unit.cc:            assert(!inst->isMemRef());
+./execution_unit.cc:            if (inst->isControl()) {
+./execution_unit.cc:                    exec_req->done(false);
+./execution_unit.cc:                fault = inst->execute();
+./execution_unit.cc:                    inst->setExecuted();
+./execution_unit.cc:                    if (inst->mispredicted()) {
+./execution_unit.cc:                        assert(inst->isControl());
+./execution_unit.cc:                        TheISA::PCState pc = inst->pcState();
+./execution_unit.cc:                        TheISA::advancePC(pc, inst->staticInst);
+./execution_unit.cc:                        inst->setPredTarg(pc);
+./execution_unit.cc:                        inst->setSquashInfo(stage_num);
+./execution_unit.cc:                                inst->seqNum, stage_num, pc);
+./execution_unit.cc:                                " misprediction at %s\n", tid, inst->pcState());
+./execution_unit.cc:                        if (inst->predTaken()) {
+./execution_unit.cc:                                    tid, inst->seqNum,
+./execution_unit.cc:                                    inst->staticInst->disassemble(
+./execution_unit.cc:                                        inst->instAddr()),
+./execution_unit.cc:                                    inst->pcState());
+./execution_unit.cc:                                    tid, inst->seqNum,
+./execution_unit.cc:                                    inst->staticInst->disassemble(
+./execution_unit.cc:                                        inst->instAddr()),
+./execution_unit.cc:                                    inst->pcState());
+./execution_unit.cc:                                "Correct.\n", inst->readTid(), seq_num);
+./execution_unit.cc:                    exec_req->done();
+./execution_unit.cc:                            inst->readTid(), inst->seqNum, fault->name());
+./execution_unit.cc:                    inst->fault = fault;
+./execution_unit.cc:                    exec_req->done();
+./execution_unit.cc:                fault = inst->execute();
+./execution_unit.cc:                    inst->setExecuted();
+./execution_unit.cc:                    for (int didx = 0; didx < inst->numDestRegs(); didx++)
+./execution_unit.cc:                        if (inst->resultType(didx) == InOrderDynInst::Float ||
+./execution_unit.cc:                            inst->resultType(didx) == InOrderDynInst::FloatBits ||
+./execution_unit.cc:                            inst->resultType(didx) == InOrderDynInst::Double)
+./execution_unit.cc:                                    "of FP execution is %08f (%x).\n", inst->readTid(),
+./execution_unit.cc:                                    seq_num, didx, inst->readFloatResult(didx),
+./execution_unit.cc:                                    inst->readFloatBitsResult(didx));
+./execution_unit.cc:                                    "of Int execution is 0x%x.\n", inst->readTid(),
+./execution_unit.cc:                                    seq_num, didx, inst->readIntResult(didx));
+./execution_unit.cc:                        if (inst->isSyscall()) {
+./execution_unit.cc:                            inst->setSquashInfo(stage_num);
+./execution_unit.cc:                            "fault.\n", inst->readTid(), seq_num, fault->name());
+./execution_unit.cc:                            inst->readTid(), inst->seqNum, fault->name());
+./execution_unit.cc:                    inst->fault = fault;
+./execution_unit.cc:                exec_req->done();
+./fetch_seq_unit.cc:        squashSeqNum[tid] = (InstSeqNum)-1;
+./fetch_seq_unit.cc:    DynInstPtr inst = fs_req->inst;
+./fetch_seq_unit.cc:    ThreadID tid = inst->readTid();
+./fetch_seq_unit.cc:    int stage_num = fs_req->getStageNum();
+./fetch_seq_unit.cc:    if (inst->fault != NoFault) {
+./fetch_seq_unit.cc:                "next stage.\n", tid, inst->seqNum, inst->fault->name(),
+./fetch_seq_unit.cc:                inst->pcState());
+./fetch_seq_unit.cc:        fs_req->done();
+./fetch_seq_unit.cc:    switch (fs_req->cmd)
+./fetch_seq_unit.cc:                inst->pcState(pc[tid]);
+./fetch_seq_unit.cc:                inst->setMemAddr(pc[tid].instAddr());
+./fetch_seq_unit.cc:                inst->setSeqNum(cpu->getAndIncrementInstSeq(tid));
+./fetch_seq_unit.cc:                        "PC %s\n", tid, inst->seqNum, inst->pcState());
+./fetch_seq_unit.cc:                fs_req->done();
+./fetch_seq_unit.cc:                fs_req->done(false);
+./fetch_seq_unit.cc:            assert(!inst->isCondDelaySlot()  &&
+./fetch_seq_unit.cc:            if (inst->isControl()) {
+./fetch_seq_unit.cc:                if (inst->isReturn() && !inst->predTaken()) {
+./fetch_seq_unit.cc:                    cpu->pipelineStage[stage_num]->
+./fetch_seq_unit.cc:                        toPrevStages->stageBlock[stage_num][tid] = true;
+./fetch_seq_unit.cc:                } else if (inst->predTaken()) {
+./fetch_seq_unit.cc:                    inst->setSquashInfo(stage_num);
+./fetch_seq_unit.cc:                            tid, stage_num, inst->squashSeqNum);
+./fetch_seq_unit.cc:                        "instruction.\n", tid, inst->seqNum);
+./fetch_seq_unit.cc:            fs_req->done();
+./fetch_seq_unit.cc:            "stage %i.\n", tid, inst->instName(), inst->pcState(),
+./fetch_seq_unit.cc:        if (inst->staticInst) {
+./fetch_seq_unit.cc:            if (inst->fault != NoFault) {
+./fetch_seq_unit.cc:                        "[sn:%i].%s %s \n", inst->seqNum,
+./fetch_seq_unit.cc:                        inst->instName(), inst->pcState());
+./fetch_seq_unit.cc:                assert(inst->staticInst);
+./fetch_seq_unit.cc:                if (inst->isControl()) {
+./fetch_seq_unit.cc:                    nextPC = inst->readPredTarg();
+./fetch_seq_unit.cc:                    if (inst->onInstList) {
+./fetch_seq_unit.cc:                        bdelay_it = inst->getInstListIt();
+./fetch_seq_unit.cc:                        InstSeqNum branch_delay_num = inst->seqNum + 1;
+./fetch_seq_unit.cc:                        bdelay_it = cpu->findInst(branch_delay_num, tid);
+./fetch_seq_unit.cc:                    if (bdelay_it != cpu->instList[tid].end()) {
+./fetch_seq_unit.cc:                        if (bdelay_inst->pc.instAddr() == nextPC.instAddr()) {
+./fetch_seq_unit.cc:                            bdelay_inst->pc = nextPC;
+./fetch_seq_unit.cc:                            advancePC(nextPC, inst->staticInst);
+./fetch_seq_unit.cc:                    nextPC = inst->pcState();
+./fetch_seq_unit.cc:                    advancePC(nextPC, inst->staticInst);
+./fetch_seq_unit.cc:                    cpu->pipelineStage[pcBlockStage[tid]]->
+./fetch_seq_unit.cc:                        fromNextStages->stageUnblock[pcBlockStage[tid]][tid] = true;
+./fetch_seq_unit.cc:        fs_res->pc[i] = fs_res->cpu->pcState(i);
+./fetch_seq_unit.cc:                fs_res->pc[i]);
+./fetch_seq_unit.cc:        fs_res->pcValid[i] = true;
+./fetch_seq_unit.cc:    pc[tid] = cpu->pcState(tid);
+./fetch_seq_unit.cc:    cpu->fetchPriorityList.push_back(tid);
+./fetch_seq_unit.cc:    squashSeqNum[tid] = (InstSeqNum)-1;
+./fetch_seq_unit.cc:    list<ThreadID>::iterator thread_it = find(cpu->fetchPriorityList.begin(),
+./fetch_seq_unit.cc:                                              cpu->fetchPriorityList.end(),
+./fetch_seq_unit.cc:    if (thread_it != cpu->fetchPriorityList.end())
+./fetch_seq_unit.cc:        cpu->fetchPriorityList.erase(thread_it);
+./fetch_seq_unit.cc:    pc[tid] = cpu->pcState(tid);
+./fetch_seq_unit.cc:    if (cpu->thread[tid]->lastGradIsBranch) {
+./fetch_seq_unit.cc:        assert(cpu->nextInstAddr(tid) == inst->instAddr());
+./fetch_seq_unit.cc:        pc[tid] = cpu->thread[tid]->lastBranchPC;
+./fetch_seq_unit.cc:        pc[tid] = inst->pcState();
+./fetch_seq_unit.cc:    assert(inst->staticInst);
+./fetch_seq_unit.cc:    advancePC(pc[tid], inst->staticInst);
+./fetch_unit.cc:      instSize(sizeof(TheISA::MachInst)), fetchBuffSize(params->fetchBuffSize)
+./fetch_unit.cc:        delete (*fetch_it)->block;
+./fetch_unit.cc:        if ((*pend_it)->block) {
+./fetch_unit.cc:            delete (*pend_it)->block;
+./fetch_unit.cc:    Addr block_addr = cacheBlockAlign(inst->getMemAddr());
+./fetch_unit.cc:    Addr fetch_addr = inst->getMemAddr();
+./fetch_unit.cc:    unsigned fetch_offset = (fetch_addr - block_addr) / instSize;
+./fetch_unit.cc:    ThreadID tid = inst->readTid();
+./fetch_unit.cc:    TheISA::PCState instPC = inst->pcState();
+./fetch_unit.cc:            "addr:%08p block:%08p\n", inst->seqNum, fetch_addr, block_addr);
+./fetch_unit.cc:    assert((*fetch_it)->valid);
+./fetch_unit.cc:        reinterpret_cast<TheISA::MachInst *>((*fetch_it)->block);
+./fetch_unit.cc:    decoder[tid]->setTC(cpu->thread[tid]->getTC());
+./fetch_unit.cc:    decoder[tid]->moreBytes(instPC, inst->instAddr(), mach_inst);
+./fetch_unit.cc:    assert(decoder[tid]->instReady());
+./fetch_unit.cc:    inst->setStaticInst(decoder[tid]->decode(instPC));
+./fetch_unit.cc:    inst->pcState(instPC);
+./fetch_unit.cc:    inst->unsetMemAddr();
+./fetch_unit.cc:    ScheduleEntry* sched_entry = *inst->curSkedEntry;
+./fetch_unit.cc:    if (!inst->validMemAddr()) {
+./fetch_unit.cc:    assert(sched_entry->cmd == InitiateFetch);
+./fetch_unit.cc:            inst->readTid(), inst->seqNum, inst->getMemAddr());
+./fetch_unit.cc:    cache_req->setRequest(inst, stage_num, id, slot_num,
+./fetch_unit.cc:                          sched_entry->cmd, MemCmd::ReadReq,
+./fetch_unit.cc:                          inst->curSkedEntry->idx);
+./fetch_unit.cc:    ThreadID tid = inst->readTid();
+./fetch_unit.cc:    Addr aligned_addr = cacheBlockAlign(inst->getMemAddr());
+./fetch_unit.cc:    if (cache_req->memReq == NULL) {
+./fetch_unit.cc:        cache_req->memReq =
+./fetch_unit.cc:                        cpu->instMasterId(), inst->instAddr(), cpu->readCpuId(),
+./fetch_unit.cc:        DPRINTF(InOrderCachePort, "[sn:%i] Created memReq @%x, ->%x\n",
+./fetch_unit.cc:                inst->seqNum, &cache_req->memReq, cache_req->memReq);
+./fetch_unit.cc:        if ((*fetch_it)->asid == asid &&
+./fetch_unit.cc:            (*fetch_it)->addr == block_addr) {
+./fetch_unit.cc:        if ((*fetch_it)->cnt == 0) {
+./fetch_unit.cc:                    (*fetch_it)->addr, (*fetch_it)->cnt);
+./fetch_unit.cc:    // to the back (represents most-recently-used location)
+./fetch_unit.cc:        if ((*fetch_it)->cnt > 0)
+./fetch_unit.cc:        if ((*fetch_it)->block) {
+./fetch_unit.cc:            delete [] (*fetch_it)->block;
+./fetch_unit.cc:    if (cachePortBlocked && cache_req->cmd == InitiateFetch) {
+./fetch_unit.cc:        cache_req->done(false);
+./fetch_unit.cc:    DynInstPtr inst = cache_req->inst;
+./fetch_unit.cc:    ThreadID tid = inst->readTid();
+./fetch_unit.cc:    Addr block_addr = cacheBlockAlign(inst->getMemAddr());
+./fetch_unit.cc:    int asid = cpu->asid[tid];
+./fetch_unit.cc:    if (inst->fault != NoFault) {
+./fetch_unit.cc:                "next stage.\n", tid, inst->seqNum, inst->fault->name(),
+./fetch_unit.cc:                cacheBlockAlign(inst->getMemAddr()));
+./fetch_unit.cc:    switch (cache_req->cmd)
+./fetch_unit.cc:                (*pending_it)->cnt++;
+./fetch_unit.cc:                        (*pending_it)->cnt);
+./fetch_unit.cc:                    (*buff_it)->cnt++;
+./fetch_unit.cc:                            "(pending:%i).\n", block_addr, (*buff_it)->cnt);
+./fetch_unit.cc:                        "through fetch buffer.\n", inst->seqNum);
+./fetch_unit.cc:                cache_req->fetchBufferFill = true;
+./fetch_unit.cc:                cache_req->setCompleted(true);
+./fetch_unit.cc:                cache_req->done(false);
+./fetch_unit.cc:            if (inst->fault == NoFault) {
+./fetch_unit.cc:                        cache_req->inst->getMemAddr(), block_addr);
+./fetch_unit.cc:                cache_req->reqData = new uint8_t[cacheBlkSize];
+./fetch_unit.cc:                inst->setCurResSlot(slot_num);
+./fetch_unit.cc:                if (cache_req->isMemAccPending()) {
+./fetch_unit.cc:        if (inst->fault != NoFault) {
+./fetch_unit.cc:                "next stage.\n", tid, inst->seqNum, inst->fault->name(),
+./fetch_unit.cc:                inst->getMemAddr());
+./fetch_unit.cc:        if (cache_req->fetchBufferFill) {
+./fetch_unit.cc:                cache_req->setCompleted(false);
+./fetch_unit.cc:            if (inst->traceData) {
+./fetch_unit.cc:                inst->traceData->setStaticInst(inst->staticInst);
+./fetch_unit.cc:                inst->traceData->setPC(inst->pcState());
+./fetch_unit.cc:            // FetchBuffer Book-Keeping
+./fetch_unit.cc:            (*fetch_it)->cnt--;
+./fetch_unit.cc:            assert((*fetch_it)->cnt >= 0);
+./fetch_unit.cc:            cache_req->done();
+./fetch_unit.cc:        if (cache_req->isMemAccComplete()) {
+./fetch_unit.cc:                    cache_req->setCompleted(false);
+./fetch_unit.cc:                delete [] (*repl_it)->block;
+./fetch_unit.cc:                    tid, inst->seqNum);
+./fetch_unit.cc:            assert((*fetch_it)->valid);
+./fetch_unit.cc:            if (inst->traceData) {
+./fetch_unit.cc:                inst->traceData->setStaticInst(inst->staticInst);
+./fetch_unit.cc:                inst->traceData->setPC(inst->pcState());
+./fetch_unit.cc:            new_block->cnt--;
+./fetch_unit.cc:            assert(new_block->cnt >= 0);
+./fetch_unit.cc:                    tid, inst->seqNum,
+./fetch_unit.cc:                    inst->staticInst->disassemble(inst->instAddr()));
+./fetch_unit.cc:            inst->unsetMemAddr();
+./fetch_unit.cc:            cache_req->done();
+./fetch_unit.cc:                    tid, inst->seqNum);
+./fetch_unit.cc:                    tid, cache_req->inst->instAddr());
+./fetch_unit.cc:            cache_req->setCompleted(false);
+./fetch_unit.cc:            // cache_req->setMemStall(true);
+./fetch_unit.cc:            cache_pkt->getAddr());
+./fetch_unit.cc:    Addr block_addr = cacheBlockAlign(cache_pkt->cacheReq->
+./fetch_unit.cc:                                      getInst()->getMemAddr());
+./fetch_unit.cc:            cache_pkt->cacheReq->getInst()->readTid(),
+./fetch_unit.cc:            cache_pkt->cacheReq->getInst()->seqNum,
+./fetch_unit.cc:            block_addr, cache_pkt->getAddr(), cache_pkt->getSize());
+./fetch_unit.cc:        findRequest(cache_pkt->cacheReq->getInst(), cache_pkt->instIdx));
+./fetch_unit.cc:              "addr. %08p\n", cache_pkt->cacheReq->getInst()->readTid(),
+./fetch_unit.cc:              cache_pkt->cacheReq->getInst()->seqNum,
+./fetch_unit.cc:    unsigned stage_num = cache_req->getStageNum();
+./fetch_unit.cc:    DynInstPtr inst = cache_req->inst;
+./fetch_unit.cc:    ThreadID tid = cache_req->inst->readTid();
+./fetch_unit.cc:    short asid = cpu->asid[tid];
+./fetch_unit.cc:    assert(!cache_req->isSquashed());
+./fetch_unit.cc:    assert(inst->curSkedEntry->cmd == CompleteFetch);
+./fetch_unit.cc:            tid, inst->seqNum, block_addr);
+./fetch_unit.cc:    (*pend_it)->block = new uint8_t[cacheBlkSize];
+./fetch_unit.cc:    memcpy((*pend_it)->block, cache_pkt->getPtr<uint8_t>(), cacheBlkSize);
+./fetch_unit.cc:    (*pend_it)->valid = true;
+./fetch_unit.cc:    cache_req->setMemAccPending(false);
+./fetch_unit.cc:    cache_req->setMemAccCompleted();
+./fetch_unit.cc:    if (cache_req->isMemStall() &&
+./fetch_unit.cc:        cpu->threadModel == InOrderCPU::SwitchOnCacheMiss) {
+./fetch_unit.cc:        cpu->activateContext(tid);
+./fetch_unit.cc:    cpu->wakeCPU();
+./fetch_unit.cc:            tid, cpu->pipelineStage[stage_num]->name());
+./fetch_unit.cc:    cpu->switchToActive(stage_num);
+./fetch_unit.cc:    DynInstPtr inst = req_ptr->getInst();
+./fetch_unit.cc:    ThreadID tid = inst->readTid();
+./fetch_unit.cc:    Addr block_addr = cacheBlockAlign(inst->getMemAddr());
+./fetch_unit.cc:    int asid = cpu->asid[tid];
+./fetch_unit.cc:        (*buff_it)->cnt--;
+./fetch_unit.cc:                "for Fetch Buffer block %08p (cnt=%i)\n", inst->seqNum,
+./fetch_unit.cc:                block_addr, (*buff_it)->cnt);
+./fetch_unit.cc:        assert((*buff_it)->cnt >= 0);
+./fetch_unit.cc:            (*block_it)->cnt--;
+./fetch_unit.cc:                    inst->seqNum,
+./fetch_unit.cc:                    block_addr, (*block_it)->cnt);
+./fetch_unit.cc:            assert((*block_it)->cnt >= 0);
+./fetch_unit.cc:            if ((*block_it)->cnt == 0) {
+./fetch_unit.cc:                if ((*block_it)->block) {
+./fetch_unit.cc:                    delete [] (*block_it)->block;
+./fetch_unit.cc:    decoder[tid]->reset();
+./fetch_unit.cc:    squash(NULL, NumStages - 1, 0, tid);
+./fetch_unit.hh:    /** Align a PC to the start of an I-cache block. */
+./graduation_unit.cc:        nonSpecInstActive[tid] = &cpu->nonSpecInstActive[tid];
+./graduation_unit.cc:        nonSpecSeqNum[tid] = &cpu->nonSpecSeqNum[tid];
+./graduation_unit.cc:    DynInstPtr inst = reqs[slot_num]->inst;
+./graduation_unit.cc:    ThreadID tid = inst->readTid();
+./graduation_unit.cc:    int stage_num = inst->curSkedEntry->stageNum;
+./graduation_unit.cc:        grad_req->done(false);
+./graduation_unit.cc:    if (cpu->trapPending[tid]) {
+./graduation_unit.cc:        grad_req->done(false);
+./graduation_unit.cc:    switch (grad_req->cmd)
+./graduation_unit.cc:            if (inst->fault != NoFault) {
+./graduation_unit.cc:                        tid, inst->seqNum, inst->fault->name(),
+./graduation_unit.cc:                        inst->instName());
+./graduation_unit.cc:                grad_req->done(false);
+./graduation_unit.cc:                    tid, inst->seqNum, inst->instName());
+./graduation_unit.cc:            grad_req->done();
+./graduation_unit.cc:                    tid, inst->seqNum, inst->staticInst->disassemble(inst->instAddr()));
+./graduation_unit.cc:            // Release Non-Speculative "Block" on instructions that could not
+./graduation_unit.cc:            // execute because there was a non-speculative inst. active.
+./graduation_unit.cc:            //        Maybe it should be, non-spec. insts should block other
+./graduation_unit.cc:            //        non-spec insts because they can potentially be reading
+./graduation_unit.cc:            //        system state that will be changed by the 1st non-spec inst.
+./graduation_unit.cc:            if (inst->isNonSpeculative()) {
+./graduation_unit.cc:                        "[tid:%i] Non-speculative inst [sn:%i] graduated\n",
+./graduation_unit.cc:                        tid, inst->seqNum);
+./graduation_unit.cc:            if (inst->traceData) {
+./graduation_unit.cc:                inst->traceData->setStageCycle(stage_num, cur_tick);
+./graduation_unit.cc:            cpu->instDone(inst, tid);
+./graduation_unit.cc:            grad_req->done();
+./inst_buffer.cc:    DynInstPtr inst = ib_req->inst;
+./inst_buffer.cc:    ThreadID tid = inst->readTid();
+./inst_buffer.cc:    int stage_num = ib_req->getStageNum();
+./inst_buffer.cc:    switch (ib_req->cmd)
+./inst_buffer.cc:                        inst->seqNum, next_stage);
+./inst_buffer.cc:            } else if(cpu->pipelineStage[bypass_stage]->isBlocked(tid)) {
+./inst_buffer.cc:                        inst->seqNum, next_stage);
+./inst_buffer.cc:            } else if(cpu->pipelineStage[bypass_stage]->
+./inst_buffer.cc:                        "buffer.\n", inst->seqNum, next_stage);
+./inst_buffer.cc:                        inst->seqNum, next_stage);
+./inst_buffer.cc:                    inst->backSked : inst->frontSked;
+./inst_buffer.cc:                insert_sked->push(new ScheduleEntry(next_stage,
+./inst_buffer.cc:                    inst->backSked : inst->frontSked;
+./inst_buffer.cc:               bypass_sked->push(new ScheduleEntry(bypass_stage,
+./inst_buffer.cc:                        "%i and enter stage %i.\n", inst->seqNum, next_stage,
+./inst_buffer.cc:                inst->setNextStage(bypass_stage);
+./inst_buffer.cc:            ib_req->done();
+./inst_buffer.cc:                        "buffer.\n", tid, inst->seqNum);
+./inst_buffer.cc:                        "because buffer is full.\n", tid, inst->seqNum);
+./inst_buffer.cc:                            (*list_it)->readTid(), (*list_it)->seqNum);
+./inst_buffer.cc:            ib_req->done(inserted);
+./inst_buffer.cc:                    "buffer.\n", tid, inst->seqNum);
+./inst_buffer.cc:            ib_req->done();
+./inst_buffer.cc:        if((*list_it)->readTid() == tid &&
+./inst_buffer.cc:           (*list_it)->seqNum > squash_seq_num) {
+./inst_buffer.cc:            (*list_it)->setSquashed();
+./inst_buffer.cc:                "buffer.\n", tid, (*remove_list.front())->seqNum);
+./mult_div_unit.cc:      multRepeatRate(params->multRepeatRate),
+./mult_div_unit.cc:      multLatency(params->multLatency),
+./mult_div_unit.cc:      div8RepeatRate(params->div8RepeatRate),
+./mult_div_unit.cc:      div8Latency(params->div8Latency),
+./mult_div_unit.cc:      div16RepeatRate(params->div16RepeatRate),
+./mult_div_unit.cc:      div16Latency(params->div16Latency),
+./mult_div_unit.cc:      div24RepeatRate(params->div24RepeatRate),
+./mult_div_unit.cc:      div24Latency(params->div24Latency),
+./mult_div_unit.cc:      div32RepeatRate(params->div32RepeatRate),
+./mult_div_unit.cc:      div32Latency(params->div32Latency),
+./mult_div_unit.cc://@TODO: Should we push this behavior into base-class to generically
+./mult_div_unit.cc:    if (mult_div_req->cmd != inst->curSkedEntry->cmd) {
+./mult_div_unit.cc:        mult_div_req->cmd = inst->curSkedEntry->cmd;
+./mult_div_unit.cc:                "instruction\n", inst->readTid(), inst->seqNum);
+./mult_div_unit.cc:        // but dont try to re-execute
+./mult_div_unit.cc:                inst->readTid(), inst->seqNum);
+./mult_div_unit.cc:    if (slot_num != -1 &&         
+./mult_div_unit.cc:        inst->curSkedEntry->cmd == reqs[slot_num]->cmd)
+./mult_div_unit.cc:        return -1;
+./mult_div_unit.cc:        if (rval != -1) {            
+./mult_div_unit.cc:            lastOpType = inst->opClass();
+./mult_div_unit.cc:            lastInstName = inst->staticInst->getName();
+./mult_div_unit.cc:    uint32_t div_op = inst->readIntSrc(1);
+./mult_div_unit.cc:    DynInstPtr inst = reqs[slot_num]->inst;
+./mult_div_unit.cc:    if (inst->fault != NoFault) {
+./mult_div_unit.cc:                "next stage.\n", inst->readTid(), inst->seqNum, inst->fault->name(),
+./mult_div_unit.cc:                inst->pcState());
+./mult_div_unit.cc:        mult_div_req->done();
+./mult_div_unit.cc:    switch (mult_div_req->cmd)
+./mult_div_unit.cc:            OpClass op_class = inst->opClass();
+./mult_div_unit.cc:            mult_div_req->setProcessing();
+./mult_div_unit.cc:            mult_div_req->setCompleted();
+./mult_div_unit.cc:        mult_div_req->done();
+./mult_div_unit.cc:        //@TODO: Why not allow high-latency requests to sleep
+./mult_div_unit.cc:            if (!mult_div_req->isProcessing()) {
+./mult_div_unit.cc:                mult_div_req->done();            
+./mult_div_unit.cc:                mult_div_req->setCompleted(false);
+./mult_div_unit.cc:    DynInstPtr inst = reqs[slot_num]->inst;
+./mult_div_unit.cc:    inst->fault = inst->execute();
+./mult_div_unit.cc:    if (inst->opClass() == IntMultOp) {
+./mult_div_unit.cc:    } else if (inst->opClass() == IntDivOp) {
+./mult_div_unit.cc:    if (inst->fault == NoFault) {
+./mult_div_unit.cc:        inst->setExecuted();
+./mult_div_unit.cc:                inst->readTid(), inst->readIntResult(0));
+./mult_div_unit.cc:                "fault.\n", inst->readTid(), inst->seqNum, inst->fault->name());
+./mult_div_unit.cc:    mult_div_req->setProcessing(false);
+./mult_div_unit.cc:    cpu->wakeCPU();
+./mult_div_unit.cc:        DynInstPtr inst = req_ptr->getInst();
+./mult_div_unit.cc:        if (req_ptr->valid &&
+./mult_div_unit.cc:            inst->readTid() == tid &&
+./mult_div_unit.cc:            inst->seqNum > squash_seq_num) {
+./mult_div_unit.cc:                    req_ptr->getInst()->readTid(),
+./mult_div_unit.cc:                    req_ptr->getInst()->seqNum);
+./mult_div_unit.cc:            req_ptr->setSquashed();
+./mult_div_unit.cc:            int req_slot_num = req_ptr->getSlot();
+./mult_div_unit.cc:            if (req_ptr->isProcessing())
+./mult_div_unit.cc:                        req_ptr->getInst()->readTid(),
+./mult_div_unit.cc:                        req_ptr->getInst()->seqNum);
+./mult_div_unit.cc:    mdu_res->exeMulDiv(slotIdx);
+./mult_div_unit.cc:    ResourceRequest* mult_div_req = resource->reqs[slotIdx];
+./mult_div_unit.cc:    if (mult_div_req->isSquashed())
+./mult_div_unit.cc:        mdu_res->freeSlot(slotIdx);
+./mult_div_unit.hh:    /** Latency & Repeat Rate for 8-bit Divide Insts */
+./mult_div_unit.hh:    /** Latency & Repeat Rate for 16-bit Divide Insts */
+./mult_div_unit.hh:    /** Latency & Repeat Rate for 24-bit Divide Insts */
+./mult_div_unit.hh:    /** Latency & Repeat Rate for 32-bit Divide Insts */
+./tlb_unit.cc:    // Hard-Code Selection For Now
+./tlb_unit.cc:    if (res_name == "I-TLB")
+./tlb_unit.cc:        _tlb = params->itb;
+./tlb_unit.cc:    else if (res_name == "D-TLB")
+./tlb_unit.cc:        _tlb = params->dtb;
+./tlb_unit.cc:    if (tlbBlocked[inst->threadNumber]) {
+./tlb_unit.cc:        return -1;
+./tlb_unit.cc:    tlb_req->setRequest(inst, stage_num, id, slot_num, cmd);
+./tlb_unit.cc:    DynInstPtr inst = tlb_req->inst;
+./tlb_unit.cc:    ThreadID tid = inst->readTid();
+./tlb_unit.cc:    InstSeqNum seq_num = inst->seqNum;
+./tlb_unit.cc:    int stage_num = tlb_req->getStageNum();
+./tlb_unit.cc:    tlb_req->fault = NoFault;
+./tlb_unit.cc:    assert(cpu->thread[tid]->getTC() != 0x0);
+./tlb_unit.cc:    assert(cpu->pipelineStage[stage_num] != 0x0);
+./tlb_unit.cc:    switch (tlb_req->cmd)
+./tlb_unit.cc:            tlb_req->fault =
+./tlb_unit.cc:                _tlb->translateAtomic(tlb_req->memReq,
+./tlb_unit.cc:                                      cpu->thread[tid]->getTC(), TheISA::TLB::Execute);
+./tlb_unit.cc:            if (tlb_req->fault != NoFault) {
+./tlb_unit.cc:                        "addr:%08p for [sn:%i].\n", tid, tlb_req->fault->name(),
+./tlb_unit.cc:                        tlb_req->memReq->getVaddr(), seq_num);
+./tlb_unit.cc:                cpu->pipelineStage[stage_num]->setResStall(tlb_req, tid);
+./tlb_unit.cc:                cpu->trap(tlb_req->fault, tid);
+./tlb_unit.cc:                        tlb_req->memReq->getVaddr(),
+./tlb_unit.cc:                        tlb_req->memReq->getPaddr());
+./tlb_unit.cc:                tlb_req->done();
+./tlb_unit.cc:                    tid, seq_num, tlb_req->memReq->getVaddr());
+./tlb_unit.cc:            TheISA::TLB::Mode tlb_mode = (tlb_req->cmd == DataReadLookup) ?
+./tlb_unit.cc:            tlb_req->fault =
+./tlb_unit.cc:                _tlb->translateAtomic(tlb_req->memReq,
+./tlb_unit.cc:                                      cpu->thread[tid]->getTC(), tlb_mode);
+./tlb_unit.cc:            if (tlb_req->fault != NoFault) {
+./tlb_unit.cc:                        "addr:%08p for [sn:%i] %s.\n", tid, tlb_req->fault->name(),
+./tlb_unit.cc:                        tlb_req->memReq->getVaddr(), seq_num, inst->instName());
+./tlb_unit.cc:                if (inst->isDataPrefetch()) {
+./tlb_unit.cc:                            tlb_req->fault->name());
+./tlb_unit.cc:                    tlb_req->fault = NoFault;
+./tlb_unit.cc:                    tlb_req->done();
+./tlb_unit.cc:                    cpu->pipelineStage[stage_num]->setResStall(tlb_req, tid);
+./tlb_unit.cc:                    cpu->trap(tlb_req->fault, tid, inst);
+./tlb_unit.cc:                        tlb_req->memReq->getVaddr(),
+./tlb_unit.cc:                        tlb_req->memReq->getPaddr());
+./tlb_unit.cc:                tlb_req->done();
+./tlb_unit.cc:    DynInstPtr inst = resource->reqs[slotIdx]->inst;
+./tlb_unit.cc:    int stage_num = resource->reqs[slotIdx]->getStageNum();
+./tlb_unit.cc:    ThreadID tid = inst->threadNumber;
+./tlb_unit.cc:            inst->seqNum);
+./tlb_unit.cc:    tlb_res->tlbBlocked[tid] = false;
+./tlb_unit.cc:    tlb_res->cpu->pipelineStage[stage_num]->
+./tlb_unit.cc:        unsetResStall(tlb_res->reqs[slotIdx], tid);
+./tlb_unit.cc:         if (req_ptr->valid &&
+./tlb_unit.cc:             req_ptr->getInst()->readTid() == tid &&
+./tlb_unit.cc:             req_ptr->getInst()->seqNum > squash_seq_num) {
+./tlb_unit.cc:                     req_ptr->getInst()->readTid(),
+./tlb_unit.cc:                     req_ptr->getInst()->seqNum);
+./tlb_unit.cc:             req_ptr->setSquashed();
+./tlb_unit.cc:             int req_slot_num = req_ptr->getSlot();
+./tlb_unit.cc:             int stall_stage = reqs[req_slot_num]->getStageNum();
+./tlb_unit.cc:             cpu->pipelineStage[stall_stage]->
+./tlb_unit.hh:            aligned_addr = inst->getMemAddr();
+./tlb_unit.hh:            inst->fetchMemReq = new Request(inst->readTid(), aligned_addr,
+./tlb_unit.hh:                                            res->cpu->instMasterId(),
+./tlb_unit.hh:                                            inst->instAddr(),
+./tlb_unit.hh:                                            res->cpu->readCpuId(),
+./tlb_unit.hh:                                            inst->readTid());
+./tlb_unit.hh:            memReq = inst->fetchMemReq;
+./tlb_unit.hh:            aligned_addr = inst->getMemAddr();;
+./tlb_unit.hh:            req_size = 0; //inst->getMemAccSize();
+./tlb_unit.hh:            flags = 0; //inst->getMemFlags();
+./tlb_unit.hh:            if (req_size == 0 && (inst->isDataPrefetch() || inst->isInstPrefetch())) {
+./tlb_unit.hh:            inst->dataMemReq = new Request(inst->readTid(), aligned_addr,
+./tlb_unit.hh:                                           res->cpu->dataMasterId(),
+./tlb_unit.hh:                                           inst->instAddr(),
+./tlb_unit.hh:                                           res->cpu->readCpuId(),
+./tlb_unit.hh:                                           inst->readTid());
+./tlb_unit.hh:            memReq = inst->dataMemReq;
+./use_def.cc:        nonSpecInstActive[tid] = &cpu->nonSpecInstActive[tid];
+./use_def.cc:        nonSpecSeqNum[tid] = &cpu->nonSpecSeqNum[tid];
+./use_def.cc:        regDepMap[tid] = &cpu->archRegDepMap[tid];
+./use_def.cc:    ud_req->setRequest(inst, stage_num, id, slot_num, cmd,
+./use_def.cc:                       inst->curSkedEntry->idx);
+./use_def.cc:        if (ud_req->valid &&
+./use_def.cc:            ud_req->getInst() == inst &&
+./use_def.cc:            ud_req->cmd == inst->curSkedEntry->cmd &&
+./use_def.cc:            ud_req->useDefIdx == inst->curSkedEntry->idx) {
+./use_def.cc:    DynInstPtr inst = ud_req->inst;
+./use_def.cc:    ThreadID tid = inst->readTid();
+./use_def.cc:    InstSeqNum seq_num = inst->seqNum;
+./use_def.cc:    int ud_idx = ud_req->useDefIdx;
+./use_def.cc:        inst->setSerializeBefore();
+./use_def.cc:    if ((inst->isIprAccess() || inst->isSerializeBefore()) &&
+./use_def.cc:        cpu->instList[tid].front() != inst) {
+./use_def.cc:        ud_req->done(false);
+./use_def.cc:    } else if (inst->isStoreConditional() || inst->isSerializeAfter()) {
+./use_def.cc:    if (inst->fault != NoFault) {
+./use_def.cc:                "next stage.\n", inst->readTid(), inst->seqNum, inst->fault->name(),
+./use_def.cc:                inst->pcState());
+./use_def.cc:        ud_req->done();
+./use_def.cc:    // If there is a non-speculative instruction
+./use_def.cc:    // ---
+./use_def.cc:                "there is non-speculative instruction [sn:%i] has not "
+./use_def.cc:        ud_req->done(false);
+./use_def.cc:    } else if (inst->isNonSpeculative()) {
+./use_def.cc:    switch (ud_req->cmd)
+./use_def.cc:            RegIndex reg_idx = inst->_srcRegIdx[ud_idx];
+./use_def.cc:            RegIndex flat_idx = cpu->flattenRegIdx(reg_idx, reg_type, tid);
+./use_def.cc:            inst->flattenSrcReg(ud_idx, flat_idx);
+./use_def.cc:                DPRINTF(InOrderUseDef, "[tid:%i]: [sn:%i]: Ignoring Reading of ISA-ZeroReg "
+./use_def.cc:                        "(Int. Reg %i).\n", tid, inst->seqNum, flat_idx);
+./use_def.cc:                ud_req->done();
+./use_def.cc:            if (regDepMap[tid]->canRead(reg_type, flat_idx, inst)) {
+./use_def.cc:                                cpu->readIntReg(flat_idx,inst->readTid()));
+./use_def.cc:                        inst->setIntSrc(ud_idx,
+./use_def.cc:                                        cpu->readIntReg(flat_idx,
+./use_def.cc:                                                        inst->readTid()));
+./use_def.cc:                                reg_idx - FP_Base_DepTag, flat_idx,
+./use_def.cc:                                cpu->readFloatRegBits(flat_idx,
+./use_def.cc:                                                      inst->readTid()),
+./use_def.cc:                                cpu->readFloatReg(flat_idx,
+./use_def.cc:                                                  inst->readTid()));
+./use_def.cc:                        inst->setFloatSrc(ud_idx,
+./use_def.cc:                                          cpu->readFloatReg(flat_idx,
+./use_def.cc:                                                            inst->readTid()));
+./use_def.cc:                        inst->setFloatRegBitsSrc(ud_idx,
+./use_def.cc:                                                 cpu->readFloatRegBits(flat_idx,
+./use_def.cc:                                                                       inst->readTid()));
+./use_def.cc:                                reg_idx - Ctrl_Base_DepTag, flat_idx,
+./use_def.cc:                                cpu->readMiscReg(flat_idx,
+./use_def.cc:                                inst->readTid()));
+./use_def.cc:                        inst->setIntSrc(ud_idx,
+./use_def.cc:                                        cpu->readMiscReg(flat_idx,
+./use_def.cc:                                                         inst->readTid()));
+./use_def.cc:                ud_req->done();
+./use_def.cc:                DynInstPtr forward_inst = regDepMap[tid]->canForward(reg_type,
+./use_def.cc:                        forward_inst->getDestIdxNum(flat_idx);
+./use_def.cc:                                    forward_inst->readIntResult(dest_reg_idx),
+./use_def.cc:                                    forward_inst->seqNum, 
+./use_def.cc:                                    inst->seqNum, ud_idx);
+./use_def.cc:                            inst->setIntSrc(ud_idx, 
+./use_def.cc:                                            forward_inst->
+./use_def.cc:                                    tid, reg_idx - FP_Base_DepTag, flat_idx,
+./use_def.cc:                                    forward_inst->readFloatResult(dest_reg_idx),
+./use_def.cc:                                    forward_inst->seqNum, inst->seqNum, ud_idx);
+./use_def.cc:                            inst->setFloatSrc(ud_idx,
+./use_def.cc:                                              forward_inst->
+./use_def.cc:                                    tid, reg_idx - Ctrl_Base_DepTag, flat_idx,
+./use_def.cc:                                    forward_inst->readIntResult(dest_reg_idx),
+./use_def.cc:                                    forward_inst->seqNum, 
+./use_def.cc:                                    inst->seqNum, ud_idx);
+./use_def.cc:                            inst->setIntSrc(ud_idx, 
+./use_def.cc:                                            forward_inst->
+./use_def.cc:                    ud_req->done();
+./use_def.cc:                    ud_req->done(false);
+./use_def.cc:            RegIndex reg_idx = inst->_destRegIdx[ud_idx];
+./use_def.cc:            RegIndex flat_idx = cpu->flattenRegIdx(reg_idx, reg_type, tid);
+./use_def.cc:                DPRINTF(IntRegs, "[tid:%i]: Ignoring Writing of ISA-ZeroReg "
+./use_def.cc:                ud_req->done();
+./use_def.cc:            if (regDepMap[tid]->canWrite(reg_type, flat_idx, inst)) {
+./use_def.cc:                                tid, seq_num, inst->readIntResult(ud_idx),
+./use_def.cc:                        regDepMap[tid]->removeFront(reg_type, flat_idx, inst);
+./use_def.cc:                        cpu->setIntReg(flat_idx,
+./use_def.cc:                                       inst->readIntResult(ud_idx),
+./use_def.cc:                                       inst->readTid());
+./use_def.cc:                        regDepMap[tid]->removeFront(reg_type, flat_idx, inst);
+./use_def.cc:                        if (inst->resultType(ud_idx) == 
+./use_def.cc:                            DPRINTF(InOrderUseDef, "[tid:%i]: [sn:%i]: Writing FP-Bits "
+./use_def.cc:                                    inst->readFloatResult(ud_idx), 
+./use_def.cc:                                    inst->readFloatBitsResult(ud_idx),
+./use_def.cc:                                    reg_idx - FP_Base_DepTag, flat_idx);
+./use_def.cc:                            cpu->setFloatRegBits(flat_idx,
+./use_def.cc:                                                 inst->readFloatBitsResult(ud_idx),
+./use_def.cc:                                                 inst->readTid());
+./use_def.cc:                        } else if (inst->resultType(ud_idx) == 
+./use_def.cc:                                    tid, seq_num, inst->readFloatResult(ud_idx),
+./use_def.cc:                                    inst->readIntResult(ud_idx), 
+./use_def.cc:                                    reg_idx - FP_Base_DepTag, flat_idx);
+./use_def.cc:                            cpu->setFloatReg(flat_idx,
+./use_def.cc:                                             inst->readFloatResult(ud_idx),
+./use_def.cc:                                             inst->readTid());
+./use_def.cc:                        } else if (inst->resultType(ud_idx) == 
+./use_def.cc:                                    inst->readFloatResult(ud_idx), 
+./use_def.cc:                                    inst->readIntResult(ud_idx), 
+./use_def.cc:                                    reg_idx - FP_Base_DepTag, flat_idx);
+./use_def.cc:                            cpu->setFloatReg(flat_idx,
+./use_def.cc:                                             inst->readFloatResult(ud_idx),
+./use_def.cc:                                             inst->readTid());
+./use_def.cc:                                  inst->seqNum, inst->instName());
+./use_def.cc:                                tid, inst->readIntResult(ud_idx), reg_idx - Ctrl_Base_DepTag);
+./use_def.cc:                        regDepMap[tid]->removeFront(reg_type, flat_idx, inst);
+./use_def.cc:                        cpu->setMiscReg(flat_idx,
+./use_def.cc:                                    inst->readIntResult(ud_idx),
+./use_def.cc:                                        inst->readTid());
+./use_def.cc:                ud_req->done();
+./use_def.cc:                ud_req->done(false);
+./use_def.cc:            regDepMap[tid]->insert(inst);
+./use_def.cc:            ud_req->done();
