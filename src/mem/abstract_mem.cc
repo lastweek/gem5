@@ -333,16 +333,16 @@ AbstractMemory::checkLockedAddrList(PacketPtr pkt)
 void
 AbstractMemory::access(PacketPtr pkt)
 {
-    assert(pkt->getAddr() >= range.start &&
-           (pkt->getAddr() + pkt->getSize() - 1) <= range.end);
+    assert(pkt->getPaddr() >= range.start &&
+           (pkt->getPaddr() + pkt->getSize() - 1) <= range.end);
 
     if (pkt->memInhibitAsserted()) {
         DPRINTF(MemoryAccess, "mem inhibited on 0x%x: not responding\n",
-                pkt->getAddr());
+                pkt->getPaddr());
         return;
     }
 
-    uint8_t *hostAddr = pmemAddr + pkt->getAddr() - range.start;
+    uint8_t *hostAddr = pmemAddr + pkt->getPaddr() - range.start;
 
     if (pkt->cmd == MemCmd::SwapReq) {
         TheISA::IntReg overwrite_val;

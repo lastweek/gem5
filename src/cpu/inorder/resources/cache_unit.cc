@@ -392,6 +392,43 @@ CacheUnit::doTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, int acc_size,
     }
 }
 
+//nonTLBAccess//smile
+void
+CacheUnit::nonTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, int acc_size,
+                        int flags, TheISA::TLB::Mode tlb_mode)
+{
+    ThreadID tid = inst->readTid();
+
+    setupMemRequest(inst, cache_req, acc_size, flags);
+
+    //@todo: HACK: the DTB expects the correct PC in the ThreadContext
+    //       but how if the memory accesses are speculative? Shouldn't
+    //       we send along the requestor's PC to the translate functions?
+    ThreadContext *tc = cpu->thread[tid]->getTC();
+    PCState old_pc = tc->pcState();
+    tc->pcState() = inst->pcState();
+    //for memory-side TLB
+    cache_req->memReq->setRegTLB_icm(tc->readMiscRegNoEffect(IPR_ICM));
+    cache_req->memReq->setRegTLB_dtb_asn(tc->readMiscRegNoEffect(IPR_DTB_ASN));
+    cache_req->memReq->setRegTLB_dtb_cm(tc->readMiscRegNoEffect(IPR_DTB_CM));
+    cache_req->memReq->setRegTLB_alt_mode(tc->readMiscRegNoEffect(IPR_ALT_MODE));
+    if (tlb_mode == TheISA::TLB::Execute){
+        cache_req->memReq->isExecute = true;
+    }
+    else {
+        cache_req->memReq->isExecute = false;
+        if (tlb_mode == TheISA::TLB::Write)
+            cache_req->memReq->isWrite = true;
+        else
+            cache_req->memReq->isWrite = false;
+  
+    }  
+    tc->pcState() = old_pc;
+  
+    inst->fault = NoFault;
+
+}
+
 void
 CacheUnit::trap(Fault fault, ThreadID tid, DynInstPtr inst)
 {
@@ -472,8 +509,15 @@ CacheUnit::read(DynInstPtr inst, Addr addr,
         inst->split2ndDataPtr = inst->splitMemData + size;
         inst->split2ndFlags = flags;        
     }
-    
-    doTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Read);
+
+    DPRINTF(InOrderCachePort, "%i: sn[%i] mydebug address "
+                    "(%#x, %#x).\n", curTick(), inst->seqNum, addr, secondAddr);
+ 
+    //remove TLB access//smile
+    //doTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Read);
+    nonTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Read);
+    DPRINTF(InOrderCachePort, "%i: mydebug read fault %s.\n", curTick(), inst->fault);
+    //
 
     if (inst->fault == NoFault) {
         if (!cache_req->splitAccess) {            
@@ -584,8 +628,12 @@ CacheUnit::write(DynInstPtr inst, uint8_t *data, unsigned size,
         inst->splitInstSked = true;
     }    
         
-    doTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Write);
-
+    //remove TLB access/smile
+    //doTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Write);
+    nonTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Write);
+    DPRINTF(InOrderCachePort, "%i: mydebug write fault %s.\n", curTick(), inst->fault);
+    //
+    
     if (inst->fault == NoFault) {
         if (!cache_req->splitAccess) {
             cache_req->reqData = new uint8_t[size];
@@ -812,6 +860,14 @@ CacheUnit::buildDataPacket(CacheRequest *cache_req)
              : MemCmd::WriteReq);
     }
 
+    //force Paddr->Vaddr//smile
+        DPRINTF(InOrderCachePort, "mydebug VA %x\n",
+            cache_req->memReq->getVaddr());
+            //cache_req->memReq->getPaddr());
+    Addr vaddr;
+    vaddr = cache_req->memReq->getVaddr();
+    cache_req->memReq->setPaddr(vaddr);
+    //
     cache_req->dataPkt = new CacheReqPacket(cache_req,
                                             cache_req->pktCmd,
                                             cache_req->instIdx);
@@ -819,6 +875,8 @@ CacheUnit::buildDataPacket(CacheRequest *cache_req)
             cache_req->getSlot(),
             cache_req->dataPkt->getAddr());
 
+    DPRINTF(InOrderCachePort, "mydebug for TLB register %x; TLB is execute %d\n",
+            cache_req->dataPkt->getRegTLB_dtb_asn(), cache_req->dataPkt->TLBisExecute());
     cache_req->dataPkt->hasSlot = true;
     cache_req->dataPkt->dataStatic(cache_req->reqData);
 }

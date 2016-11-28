@@ -53,6 +53,9 @@
 #include "debug/CoherentBus.hh"
 #include "mem/coherent_bus.hh"
 
+using namespace std;
+using namespace TheISA;
+using namespace ThePipeline;
 CoherentBus::CoherentBus(const CoherentBusParams *p)
     : BaseBus(p), reqLayer(*this, ".reqLayer", p->clock),
       respLayer(*this, ".respLayer", p->clock),
@@ -106,9 +109,85 @@ CoherentBus::init()
         warn("CoherentBus %s has no snooping ports attached!\n", name());
 }
 
+//debug//smile
+Fault
+CoherentBus::test()
+{
+  return NoFault;
+}
+
+Fault
+CoherentBus::translateAtomic_post(PacketPtr pkt)
+{
+    //RequestPtr req=0;
+    bool isExecute = pkt->TLBisExecute();
+    DPRINTF(CoherentBus, "TLB debug %d\n", isExecute);
+    //if (pkt->TLBisExecute()){
+    //    DPRINTF(CoherentBus, "TLB is execute\n");
+    //    return translateInst_post(req, pkt);
+
+    //}
+    //else{
+    //    DPRINTF(CoherentBus, "TLB is not execute\n");
+    //    //return translateData(req, tc, mode == Write);
+        return NoFault;
+    //}
+}
+
+void
+CoherentBus::doTLBAccess(PacketPtr pkt)
+//CoherentBus::doTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, 
+//                         TheISA::TLB::Mode tlb_mode, PacketPtr pkt)
+{
+    //ThreadID tid = inst->readTid();
+
+    //setupMemRequest(inst, cache_req, acc_size, flags);
+
+    //@todo: HACK: the DTB expects the correct PC in the ThreadContext
+    //       but how if the memory accesses are speculative? Shouldn't
+    //       we send along the requestor's PC to the translate functions?
+    //ThreadContext *tc = cpu->thread[tid]->getTC();
+    //PCState old_pc = tc->pcState();
+    //tc->pcState() = inst->pcState();
+
+    //inst->fault = 
+    //    _tlb->translateAtomic(cache_req->memReq, tc, tlb_mode);
+    DPRINTF(CoherentBus, "TLB debug 1111\n");
+    //Fault fault = translateAtomic_post(pkt);
+    Fault fault = _tlb->translateAtomic_post(pkt);
+    //Fault fault = _tlb->test();
+    //tc->pcState() = old_pc;
+
+    //if (inst->fault != NoFault) {
+    //    DPRINTF(CoherentBus, "[tid:%i]: %s encountered while translating "
+    //            "addr:%08p for [sn:%i].\n", tid, inst->fault->name(),
+    //            cache_req->memReq->getVaddr(), inst->seqNum);
+
+    //    tlbBlocked[tid] = true;
+    //    tlbBlockSeqNum[tid] = inst->seqNum;
+
+        // Make sure nothing gets executed until after this faulting
+        // instruction gets handled.
+    //    inst->setSerializeAfter();
+
+        // Mark it as complete so it can pass through next stage.
+        // Fault Handling will happen at commit/graduation
+    //    cache_req->setCompleted();
+    //} else {
+    //    DPRINTF(CoherentBus, "[tid:%i]: [sn:%i] virt. addr %08p translated "
+    //            "to phys. addr:%08p.\n", tid, inst->seqNum,
+    //            cache_req->memReq->getVaddr(),
+    //            cache_req->memReq->getPaddr());
+    //}
+}
+
 bool
 CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 {
+    pkt->setPaddr(448);//debug force physical addr//smile
+    DPRINTF(CoherentBus, "TLB register read out %x\n",
+                pkt->getRegTLB_dtb_asn());
+    doTLBAccess(pkt); 
     // determine the source port based on the id
     SlavePort *src_port = slavePorts[slave_port_id];
 
@@ -125,7 +204,7 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 
     DPRINTF(CoherentBus, "recvTimingReq: src %s %s expr %d 0x%x\n",
             src_port->name(), pkt->cmdString(), is_express_snoop,
-            pkt->getAddr());
+            pkt->getPaddr());
 
     // set the source port for routing of the response
     pkt->setSrc(slave_port_id);
@@ -158,7 +237,7 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 
     // since it is a normal request, determine the destination
     // based on the address and attempt to send the packet
-    bool success = masterPorts[findPort(pkt->getAddr())]->sendTimingReq(pkt);
+    bool success = masterPorts[findPort(pkt->getPaddr())]->sendTimingReq(pkt);
 
     // if this is an express snoop, we are done at this point
     if (is_express_snoop) {
@@ -175,7 +254,7 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
                 outstandingReq.erase(pkt->req);
 
             DPRINTF(CoherentBus, "recvTimingReq: src %s %s 0x%x RETRY\n",
-                    src_port->name(), pkt->cmdString(), pkt->getAddr());
+                    src_port->name(), pkt->cmdString(), pkt->getPaddr());
 
             // update the bus state and schedule an idle event
             reqLayer.failedTiming(src_port, headerFinishTime);

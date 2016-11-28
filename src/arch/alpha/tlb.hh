@@ -45,6 +45,16 @@
 #include "sim/fault_fwd.hh"
 #include "sim/tlb.hh"
 
+#include "mem/bus.hh"
+#include "params/CoherentBus.hh"
+
+#include "mem/packet.hh"
+#include "mem/packet_access.hh"
+#include "mem/port.hh"
+#include "params/InOrderCPU.hh"
+#include "sim/sim_object.hh"
+
+
 class ThreadContext;
 
 namespace AlphaISA {
@@ -139,9 +149,12 @@ class TLB : public BaseTLB
   protected:
     Fault translateData(RequestPtr req, ThreadContext *tc, bool write);
     Fault translateInst(RequestPtr req, ThreadContext *tc);
+    Fault translateInst_post(RequestPtr req, PacketPtr pkt);
 
   public:
+    Fault test();//debug
     Fault translateAtomic(RequestPtr req, ThreadContext *tc, Mode mode);
+    Fault translateAtomic_post(PacketPtr pkt);
     void translateTiming(RequestPtr req, ThreadContext *tc,
                          Translation *translation, Mode mode);
     /**

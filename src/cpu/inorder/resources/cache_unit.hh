@@ -126,6 +126,10 @@ class CacheUnit : public Resource
     void doTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, int acc_size,
                       int flags,  TheISA::TLB::Mode tlb_mode);
 
+    //add nonTLBAccess//smile
+    void nonTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, int acc_size,
+                      int flags, TheISA::TLB::Mode tlb_mode);
+    //
     /** Read/Write on behalf of an instruction.
      *  curResSlot needs to be a valid value in instruction.
      */

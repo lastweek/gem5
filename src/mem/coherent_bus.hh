@@ -54,6 +54,17 @@
 #include "mem/bus.hh"
 #include "params/CoherentBus.hh"
 
+#include "arch/tlb.hh"
+#include "base/hashmap.hh"
+#include "config/the_isa.hh"
+#include "cpu/inorder/inorder_dyn_inst.hh"
+#include "cpu/inorder/pipeline_traits.hh"
+#include "cpu/inorder/resource.hh"
+#include "mem/packet.hh"
+#include "mem/packet_access.hh"
+#include "mem/port.hh"
+#include "params/InOrderCPU.hh"
+#include "sim/sim_object.hh"
 /**
  * A coherent bus connects a number of (potentially) snooping masters
  * and slaves, and routes the request and response packets based on
@@ -67,6 +78,15 @@
  */
 class CoherentBus : public BaseBus
 {
+  private:
+    void doTLBAccess(PacketPtr pkt);
+    Fault test();
+    Fault translateAtomic_post(PacketPtr pkt);
+    bool tlbBlocked[ThePipeline::MaxThreads];
+    InstSeqNum tlbBlockSeqNum[ThePipeline::MaxThreads];
+ 
+    TheISA::TLB* tlb();
+    TheISA::TLB *_tlb;
 
   protected:
 

@@ -157,6 +157,8 @@ FetchUnit::setupMemRequest(DynInstPtr inst, CacheReqPtr cache_req,
             new Request(tid, aligned_addr, acc_size, flags,
                         cpu->instMasterId(), inst->instAddr(), cpu->readCpuId(),
                         tid);
+        DPRINTF(InOrderCachePort, "[sn:%i] mydebug aligned addr %x, request addr %x\n",
+                inst->seqNum, aligned_addr, inst->instAddr());
         DPRINTF(InOrderCachePort, "[sn:%i] Created memReq @%x, ->%x\n",
                 inst->seqNum, &cache_req->memReq, cache_req->memReq);
     }
@@ -317,7 +319,11 @@ FetchUnit::execute(int slot_num)
                 return;
             }
 
-            doTLBAccess(inst, cache_req, cacheBlkSize, Request::INST_FETCH, TheISA::TLB::Execute);
+            //remove TLB access//smile
+            //doTLBAccess(inst, cache_req, cacheBlkSize, Request::INST_FETCH, TheISA::TLB::Execute);
+            nonTLBAccess(inst, cache_req, cacheBlkSize, Request::INST_FETCH, TheISA::TLB::Execute);
+            DPRINTF(InOrderCachePort, "%i: mydebug icache Fault %s.\n", curTick(), inst->fault);
+            //
 
             if (inst->fault == NoFault) {
                 DPRINTF(InOrderCachePort,
@@ -334,6 +340,7 @@ FetchUnit::execute(int slot_num)
                 if (cache_req->isMemAccPending()) {
                     pendingFetch.push_back(new FetchBlock(asid, block_addr));
 
+            DPRINTF(InOrderCachePort, "%i: mydebug icache ------.\n", curTick());
                     // mark replacement block
                 }
             }

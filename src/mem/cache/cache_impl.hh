@@ -143,6 +143,9 @@ Cache<TagStore>::satisfyCpuSideRequest(PacketPtr pkt, BlkType *blk,
     // Read requester(s) to have buffered the ReadEx snoop and to
     // invalidate their blocks after receiving them.
     // assert(!pkt->needsExclusive() || blk->isWritable());
+       DPRINTF(Cache, "blkSize %x \n", blkSize);
+       DPRINTF(Cache, "getOffset %x \n", pkt->getOffset(blkSize));
+       DPRINTF(Cache, "getSize %d \n", pkt->getSize());
     assert(pkt->getOffset(blkSize) + pkt->getSize() <= blkSize);
 
     // Check RMW operations first since both isRead() and
@@ -496,6 +499,10 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
 
     bool needsResponse = pkt->needsResponse();
 
+    DPRINTF(Cache, "satisfied is %s\n",
+                        satisfied);
+    DPRINTF(Cache, "needsResponse is %s\n",
+                        needsResponse);
     if (satisfied) {
         if (prefetcher && (prefetchOnAccess || (blk && blk->wasPrefetched()))) {
             if (blk)
@@ -519,6 +526,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
         MSHR *mshr = mshrQueue.findMatch(blk_addr);
 
         if (mshr) {
+            DPRINTF(Cache, "mshr hit\n");
             // MSHR hit
             //@todo remove hw_pf here
             assert(pkt->req->masterId() < system->maxMasters());
@@ -536,6 +544,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
                 // mshrQueue.moveToFront(mshr);
             }
         } else {
+            DPRINTF(Cache, "no mshr\n");
             // no MSHR
             assert(pkt->req->masterId() < system->maxMasters());
             mshr_misses[pkt->cmdToIndex()][pkt->req->masterId()]++;
@@ -543,9 +552,11 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
             // no-write-allocate or bypass accesses this will have to
             // be changed.
             if (pkt->cmd == MemCmd::Writeback) {
+            DPRINTF(Cache, "Writeback\n");
                 allocateWriteBuffer(pkt, time, true);
             } else {
                 if (blk && blk->isValid()) {
+                    DPRINTF(Cache, "blk is valid\n");
                     // If we have a write miss to a valid block, we
                     // need to mark the block non-readable.  Otherwise
                     // if we allow reads while there's an outstanding
@@ -566,6 +577,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
                 }
 
                 allocateMissBuffer(pkt, time, true);
+                    DPRINTF(Cache, "allocate miss buffer\n");
             }
 
             if (prefetcher) {
@@ -584,6 +596,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
         writebacks.pop_front();
     }
 
+    DPRINTF(Cache, "timing access end\n");
     return true;
 }
 
@@ -1362,6 +1375,7 @@ Cache<TagStore>::CpuSidePort::recvTimingSnoopResp(PacketPtr pkt)
 {
     // Express snoop responses from master to slave, e.g., from L1 to L2
     cache->timingAccess(pkt);
+    DPRINTF(Cache, "CpuSidePort snoop resp\n");
     return true;
 }
 
@@ -1616,6 +1630,9 @@ Cache<TagStore>::CpuSidePort::recvTimingReq(PacketPtr pkt)
     }
 
     cache->timingAccess(pkt);
+    DPRINTF(Cache, "CpuSidePort timing req\n");
+    DPRINTF(Cache, "recvTimingReq: Address is 0x%x\n",
+            pkt->getAddr());
     return true;
 }
 

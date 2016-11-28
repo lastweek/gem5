@@ -44,7 +44,13 @@
 #include "debug/TLB.hh"
 #include "sim/full_system.hh"
 
+#include "arch/isa_traits.hh"
+#include "arch/locked_mem.hh"
+#include "arch/utility.hh"
+#include "config/the_isa.hh"
+
 using namespace std;
+using namespace TheISA;
 
 namespace AlphaISA {
 
@@ -445,6 +451,85 @@ TLB::translateInst(RequestPtr req, ThreadContext *tc)
 }
 
 Fault
+TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
+{
+    //If this is a pal pc, then set PHYSICAL
+    if (FullSystem && PcPAL(req->getPC()))
+        req->setFlags(Request::PHYSICAL);
+    DPRINTF(TLB, "mydebug TLB 1\n");
+    if (PcPAL(req->getPC())) {
+        // strip off PAL PC marker (lsb is 1)
+        req->setPaddr((req->getVaddr() & ~3) & PAddrImplMask);
+        fetch_hits++;
+        return NoFault;
+    }
+
+    DPRINTF(TLB, "mydebug TLB 2\n");
+    if (req->getFlags() & Request::PHYSICAL) {
+        req->setPaddr(req->getVaddr());
+    } else {
+        // verify that this is a good virtual address
+        if (!validVirtualAddress(req->getVaddr())) {
+            fetch_acv++;
+            return new ItbAcvFault(req->getVaddr());
+        }
+
+
+        // VA<42:41> == 2, VA<39:13> maps directly to PA<39:13> for EV5
+        // VA<47:41> == 0x7e, VA<40:13> maps directly to PA<40:13> for EV6
+        if (VAddrSpaceEV6(req->getVaddr()) == 0x7e) {
+            // only valid in kernel mode
+            if (ICM_CM(pkt->getRegTLB_icm()) !=
+                mode_kernel) {
+                fetch_acv++;
+                return new ItbAcvFault(req->getVaddr());
+            }
+
+            req->setPaddr(req->getVaddr() & PAddrImplMask);
+
+            // sign extend the physical address properly
+            if (req->getPaddr() & PAddrUncachedBit40)
+                req->setPaddr(req->getPaddr() | ULL(0xf0000000000));
+            else
+                req->setPaddr(req->getPaddr() & ULL(0xffffffffff));
+        } else {
+            // not a physical address: need to look up pte
+            int asn = DTB_ASN_ASN(pkt->getRegTLB_dtb_asn());
+            DPRINTF(TLB, "asn = %#x\n",asn);
+            TlbEntry *entry = lookup(VAddr(req->getVaddr()).vpn(),
+                              asn);
+
+            if (!entry) {
+                fetch_misses++;
+                return new ItbPageFault(req->getVaddr());
+            }
+
+            pkt->setPaddr((entry->ppn << PageShift) +
+                          (VAddr(req->getVaddr()).offset()
+                           & ~3));
+            DPRINTF(TLB, " mydebug TLB physical address %#x\n", pkt->getPaddr());
+            // check permissions for this access
+            if (!(entry->xre &
+                  (1 << ICM_CM(pkt->getRegTLB_icm())))) {
+                // instruction access fault
+                fetch_acv++;
+                return new ItbAcvFault(req->getVaddr());
+            }
+
+            fetch_hits++;
+        }
+    }
+
+    // check that the physical address is ok (catch bad physical addresses)
+    if (req->getPaddr() & ~PAddrImplMask) {
+        return new MachineCheckFault();
+    }
+
+    return checkCacheability(req, true);
+
+}
+
+Fault
 TLB::translateData(RequestPtr req, ThreadContext *tc, bool write)
 {
     mode_type mode =
@@ -583,6 +668,14 @@ TLB::index(bool advance)
     return *entry;
 }
 
+//debug
+Fault
+TLB::test()
+{
+  //DPRINTF(TLB, "TLB debug atomic\n");
+  return NoFault;
+}
+
 Fault
 TLB::translateAtomic(RequestPtr req, ThreadContext *tc, Mode mode)
 {
@@ -590,6 +683,26 @@ TLB::translateAtomic(RequestPtr req, ThreadContext *tc, Mode mode)
         return translateInst(req, tc);
     else
         return translateData(req, tc, mode == Write);
+}
+
+Fault
+TLB::translateAtomic_post(PacketPtr pkt)
+{
+    DPRINTF(TLB, "TLB debug atomic\n");
+    //RequestPtr req=0;
+    //DPRINTF(TLB, "TLB debug atomic\n");
+    //DPRINTF(TLB, "TLB debug %d\n", pkt->TLBisExecute());
+    //if (pkt->TLBisExecute()){
+    //    DPRINTF(TLB, "TLB is execute\n");
+    //    return translateInst_post(req, pkt);
+
+    //}
+    //else{
+    //    DPRINTF(TLB, "TLB is not execute\n");
+    //    //return translateData(req, tc, mode == Write);
+    //    return NoFault;
+    //}
+    return NoFault;
 }
 
 void

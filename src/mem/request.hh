@@ -117,6 +117,9 @@ class Request
     static const MasterID invldMasterId = USHRT_MAX;
     /** @} */
 
+    //TLB mode//smile
+    bool isExecute;
+    bool isWrite;
   private:
     typedef uint8_t PrivateFlagsType;
     typedef ::Flags<PrivateFlagsType> PrivateFlags;
@@ -147,6 +150,11 @@ class Request
      */
     Addr _paddr;
 
+    //TLB register//smile
+    uint64_t _reg_ipr_icm;
+    uint64_t _reg_ipr_dtb_asn;
+    uint64_t _reg_ipr_dtb_cm;
+    uint64_t _reg_ipr_alt_mode;
     /**
      * The size of the request. This field must be set when vaddr or
      * paddr is written via setVirt() or setPhys(), so it is always
@@ -300,6 +308,54 @@ class Request
         privateFlags.set(VALID_PADDR);
     }
 
+    //set/get TLB register//smile
+    void
+    setRegTLB_icm(uint64_t reg_ipr_icm)
+    {
+        _reg_ipr_icm = reg_ipr_icm;
+    }
+
+    void
+    setRegTLB_dtb_asn(uint64_t reg_ipr_dtb_asn)
+    {
+        _reg_ipr_dtb_asn = reg_ipr_dtb_asn;
+    }
+
+    void
+    setRegTLB_dtb_cm(uint64_t reg_ipr_dtb_cm)
+    {
+        _reg_ipr_dtb_cm = reg_ipr_dtb_cm;
+    }
+
+    void
+    setRegTLB_alt_mode(uint64_t reg_ipr_alt_mode)
+    {
+        _reg_ipr_alt_mode = reg_ipr_alt_mode;
+    }
+
+    uint64_t
+    getRegTLB_icm()
+    {
+        return _reg_ipr_icm;
+    }
+
+    uint64_t
+    getRegTLB_dtb_asn()
+    {
+        return _reg_ipr_dtb_asn;
+    }
+
+    uint64_t
+    getRegTLB_dtb_cm()
+    {
+        return _reg_ipr_dtb_cm;
+    }
+    
+    uint64_t
+    getRegTLB_alt_mode()
+    {
+        return _reg_ipr_alt_mode;
+    }
     /**
      * Generate two requests as if this request had been split into two
      * pieces. The original request can't have been translated already.
