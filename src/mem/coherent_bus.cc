@@ -110,29 +110,6 @@ CoherentBus::init()
 }
 
 //debug//smile
-Fault
-CoherentBus::test()
-{
-  return NoFault;
-}
-
-Fault
-CoherentBus::translateAtomic_post(PacketPtr pkt)
-{
-    //RequestPtr req=0;
-    bool isExecute = pkt->TLBisExecute();
-    DPRINTF(CoherentBus, "TLB debug %d\n", isExecute);
-    //if (pkt->TLBisExecute()){
-    //    DPRINTF(CoherentBus, "TLB is execute\n");
-    //    return translateInst_post(req, pkt);
-
-    //}
-    //else{
-    //    DPRINTF(CoherentBus, "TLB is not execute\n");
-    //    //return translateData(req, tc, mode == Write);
-        return NoFault;
-    //}
-}
 
 void
 CoherentBus::doTLBAccess(PacketPtr pkt)

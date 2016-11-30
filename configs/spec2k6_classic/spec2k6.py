@@ -43,12 +43,12 @@ from m5.objects import *
 
 m5.util.addToPath('../common')
 
-bench_dir='/home/min/a/ece565/benchspec/CPU2006/'
+bench_dir='/root/SPEC2006/'
 
 ### Note: That some benchmarks require this variable to be modified to match
 ### your home environment. This variable only applies for certain benchmarks
 ### that require read/write to an output directory
-output_dir= '/home/min/a/username/outputs/spec2k6/'
+output_dir= '/root/we/outputs/spec2k6/'
 
 #400.perlbench
 perlbench = LiveProcess()

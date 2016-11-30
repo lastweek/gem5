@@ -152,7 +152,6 @@ class TLB : public BaseTLB
     Fault translateInst_post(RequestPtr req, PacketPtr pkt);
 
   public:
-    Fault test();//debug
     Fault translateAtomic(RequestPtr req, ThreadContext *tc, Mode mode);
     Fault translateAtomic_post(PacketPtr pkt);
     void translateTiming(RequestPtr req, ThreadContext *tc,

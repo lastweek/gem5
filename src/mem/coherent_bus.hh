@@ -80,8 +80,6 @@ class CoherentBus : public BaseBus
 {
   private:
     void doTLBAccess(PacketPtr pkt);
-    Fault test();
-    Fault translateAtomic_post(PacketPtr pkt);
     bool tlbBlocked[ThePipeline::MaxThreads];
     InstSeqNum tlbBlockSeqNum[ThePipeline::MaxThreads];
  
