@@ -129,6 +129,7 @@ AddrMapper::recvTimingReq(PacketPtr pkt)
         pkt->senderState = new AddrMapperSenderState(senderState, orig_addr);
     }
 
+    printf("orig_addr = %#lx remapAddr = %#lx \n", orig_addr, remapAddr(orig_addr));
     pkt->setAddr(remapAddr(orig_addr));
 
     // Attempt to send the packet (always succeeds for inhibited

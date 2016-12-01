@@ -510,7 +510,8 @@ if main['GCC'] + main['SUNCC'] + main['ICC'] + main['CLANG'] > 1:
 if main['GCC']:
     main.Append(CCFLAGS=['-pipe'])
     main.Append(CCFLAGS=['-fno-strict-aliasing'])
-    main.Append(CCFLAGS=['-Wall', '-Wno-sign-compare', '-Wundef'])
+    main.Append(CCFLAGS=['-Wall', '-Wno-sign-compare', '-Wundef', '-Wno-error=maybe-uninitialized'])
+    main.Append(CCFLAGS=['-Wno-error=format'])
     # Read the GCC version to check for versions with bugs
     # Note CCVERSION doesn't work here because it is run with the CC
     # before we override it from the command line

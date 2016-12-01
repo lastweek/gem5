@@ -317,7 +317,9 @@ FetchUnit::execute(int slot_num)
                 return;
             }
 
+	    printf("Before doTLBAccess, %i, %#lx\n", inst->seqNum, inst->instAddr());
             doTLBAccess(inst, cache_req, cacheBlkSize, Request::INST_FETCH, TheISA::TLB::Execute);
+	    printf("After doTLBAccess, %i, %#lx\n", inst->seqNum, inst->instAddr());
 
             if (inst->fault == NoFault) {
                 DPRINTF(InOrderCachePort,
@@ -329,7 +331,9 @@ FetchUnit::execute(int slot_num)
 
                 inst->setCurResSlot(slot_num);
 
+	    	printf("Before doCacheAccess, %i, %#lx\n", inst->seqNum, inst->instAddr());
                 doCacheAccess(inst);
+	    	printf("After doCacheAccess, %i, %#lx\n", inst->seqNum, inst->instAddr());
 
                 if (cache_req->isMemAccPending()) {
                     pendingFetch.push_back(new FetchBlock(asid, block_addr));
