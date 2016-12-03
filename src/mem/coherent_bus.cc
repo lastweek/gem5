@@ -61,6 +61,8 @@ CoherentBus::CoherentBus(const CoherentBusParams *p)
       respLayer(*this, ".respLayer", p->clock),
       snoopRespLayer(*this, ".snoopRespLayer", p->clock)
 {
+    //TLB setting//
+    _tlb = p->itb;
     // create the ports based on the size of the master and slave
     // vector ports, and the presence of the default port, the ports
     // are enumerated starting from zero
@@ -110,11 +112,8 @@ CoherentBus::init()
 }
 
 //debug//smile
-
 void
 CoherentBus::doTLBAccess(PacketPtr pkt)
-//CoherentBus::doTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, 
-//                         TheISA::TLB::Mode tlb_mode, PacketPtr pkt)
 {
     //ThreadID tid = inst->readTid();
 
@@ -130,9 +129,7 @@ CoherentBus::doTLBAccess(PacketPtr pkt)
     //inst->fault = 
     //    _tlb->translateAtomic(cache_req->memReq, tc, tlb_mode);
     DPRINTF(CoherentBus, "TLB debug 1111\n");
-    //Fault fault = translateAtomic_post(pkt);
     Fault fault = _tlb->translateAtomic_post(pkt);
-    //Fault fault = _tlb->test();
     //tc->pcState() = old_pc;
 
     //if (inst->fault != NoFault) {
@@ -161,10 +158,10 @@ CoherentBus::doTLBAccess(PacketPtr pkt)
 bool
 CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 {
-    pkt->setPaddr(448);//debug force physical addr//smile
-    DPRINTF(CoherentBus, "TLB register read out %x\n",
-                pkt->getRegTLB_dtb_asn());
+    //pkt->setPaddr(448);//debug force physical addr//smile
     doTLBAccess(pkt); 
+    DPRINTF(CoherentBus, "Physical address is %x\n",
+                pkt->getPaddr());
     // determine the source port based on the id
     SlavePort *src_port = slavePorts[slave_port_id];
 

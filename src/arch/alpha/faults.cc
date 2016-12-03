@@ -189,13 +189,14 @@ ItbPageFault::invoke(ThreadContext *tc, StaticInstPtr inst)
         ItbFault::invoke(tc);
         return;
     }
-
+    printf("ItbPageFault\n");
     Process *p = tc->getProcessPtr();
     TlbEntry entry;
     bool success = p->pTable->lookup(pc, entry);
     if (!success) {
         panic("Tried to execute unmapped address %#x.\n", pc);
     } else {
+        printf("page table lookup success\n");
         VAddr vaddr(pc);
         tc->getITBPtr()->insert(vaddr.page(), entry);
     }

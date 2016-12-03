@@ -42,6 +42,12 @@
 from MemObject import MemObject
 from m5.params import *
 
+#TLB move to memory-side//
+from m5.defines import buildEnv
+if buildEnv['TARGET_ISA'] == 'alpha':
+    from AlphaTLB import AlphaDTB, AlphaITB
+    from AlphaInterrupts import AlphaInterrupts
+
 class BaseBus(MemObject):
     type = 'BaseBus'
     abstract = True
@@ -65,6 +71,14 @@ class BaseBus(MemObject):
     # bus configuration.
     use_default_range = Param.Bool(False, "Perform address mapping for " \
                                        "the default port")
+
+    #TLB move to memory-side//
+    if buildEnv['TARGET_ISA'] == 'alpha':
+            dtb = Param.AlphaTLB(AlphaDTB(), "Data TLB")
+	    itb = Param.AlphaTLB(AlphaITB(), "Instruction TLB")
+            interrupts = Param.AlphaInterrupts(
+	            NULL, "Interrupt Controller")
+
 
 class NoncoherentBus(BaseBus):
     type = 'NoncoherentBus'
