@@ -321,7 +321,7 @@ class ProxyThreadContext : public ThreadContext
 
     SETranslatingPortProxy &getMemProxy() { return actualTC->getMemProxy(); }
 
-    Process *getProcessPtr() { return actualTC->getProcessPtr(); }
+    Process *getProcessPtr() { assert(actualTC); return actualTC->getProcessPtr(); }
 
     Status status() const { return actualTC->status(); }
 

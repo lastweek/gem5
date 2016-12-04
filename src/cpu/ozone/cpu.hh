@@ -109,7 +109,7 @@ class OzoneCPU : public BaseCPU
         TheISA::Kernel::Statistics *getKernelStats()
         { return thread->getKernelStats(); }
 
-        Process *getProcessPtr() { return thread->getProcessPtr(); }
+        Process *getProcessPtr() { assert(thread); return thread->getProcessPtr(); }
 
         PortProxy &getPhysProxy() { return thread->getPhysProxy(); }
 

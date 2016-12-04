@@ -113,7 +113,7 @@ class O3ThreadContext : public ThreadContext
     { return thread->kernelStats; }
 
     /** Returns a pointer to this thread's process. */
-    virtual Process *getProcessPtr() { return thread->getProcessPtr(); }
+    virtual Process *getProcessPtr() { assert(thread); return thread->getProcessPtr(); }
 
     virtual PortProxy &getPhysProxy() { return thread->getPhysProxy(); }
 

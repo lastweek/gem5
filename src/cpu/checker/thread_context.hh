@@ -125,7 +125,7 @@ class CheckerThreadContext : public ThreadContext
     TheISA::Kernel::Statistics *getKernelStats()
     { return actualTC->getKernelStats(); }
 
-    Process *getProcessPtr() { return actualTC->getProcessPtr(); }
+    Process *getProcessPtr() { assert(actualTC); return actualTC->getProcessPtr(); }
 
     PortProxy &getPhysProxy() { return actualTC->getPhysProxy(); }
 

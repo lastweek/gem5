@@ -122,6 +122,13 @@ inline const std::string &name() { return Trace::DefaultName; }
     Trace::dprintf((Tick)-1, string(), __VA_ARGS__);            \
 } while (0)
 
+#define PR(...) do {		\
+} while (0)
+
+#define _PR(...) do {		\
+	printf(__VA_ARGS__);	\
+} while (0)
+
 #else // !TRACING_ON
 
 #define DTRACE(x) (false)
@@ -132,6 +139,8 @@ inline const std::string &name() { return Trace::DefaultName; }
 #define DDUMPN(data, count) do {} while (0)
 #define DPRINTFN(...) do {} while (0)
 #define DPRINTFNR(...) do {} while (0)
+
+#define PR(...) do {} while (0)
 
 #endif  // TRACING_ON
 

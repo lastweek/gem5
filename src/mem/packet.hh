@@ -265,6 +265,76 @@ class Packet : public Printable
     Flags flags;
 
   public:
+    typedef uint32_t ReqFlagsType;
+    typedef ::Flags<ReqFlagsType> ReqFlags;
+
+    /** ASI information for this request if it exists. */
+    static const ReqFlagsType ASI_BITS                    = 0x000000FF;
+    /** The request was an instruction fetch. */
+    static const ReqFlagsType INST_FETCH                  = 0x00000100;
+    /** The virtual address is also the physical address. */
+    static const ReqFlagsType PHYSICAL                    = 0x00000200;
+    /** The request is an ALPHA VPTE pal access (hw_ld). */
+    static const ReqFlagsType VPTE                        = 0x00000400;
+    /** Use the alternate mode bits in ALPHA. */
+    static const ReqFlagsType ALTMODE                     = 0x00000800;
+    /** The request is to an uncacheable address. */
+    static const ReqFlagsType UNCACHEABLE                 = 0x00001000;
+    /** This request is to a memory mapped register. */
+    static const ReqFlagsType MMAPPED_IPR                  = 0x00002000;
+    /** This request is a clear exclusive. */
+    static const ReqFlagsType CLEAR_LL                    = 0x00004000;
+
+    /** The request should not cause a memory access. */
+    static const ReqFlagsType NO_ACCESS                   = 0x00080000;
+    /** This request will lock or unlock the accessed memory. When used with
+     * a load, the access locks the particular chunk of memory. When used
+     * with a store, it unlocks. The rule is that locked accesses have to be
+     * made up of a locked load, some operation on the data, and then a locked
+     * store.
+     */
+    static const ReqFlagsType LOCKED                      = 0x00100000;
+    /** The request is a Load locked/store conditional. */
+    static const ReqFlagsType LLSC                        = 0x00200000;
+    /** This request is for a memory swap. */
+    static const ReqFlagsType MEM_SWAP                    = 0x00400000;
+    static const ReqFlagsType MEM_SWAP_COND               = 0x00800000;
+
+    /** The request is a prefetch. */
+    static const ReqFlagsType PREFETCH                    = 0x01000000;
+    /** The request should be prefetched into the exclusive state. */
+    static const ReqFlagsType PF_EXCLUSIVE                = 0x02000000;
+    /** The request should be marked as LRU. */
+    static const ReqFlagsType EVICT_NEXT                  = 0x04000000;
+
+    /** These flags are *not* cleared when a Request object is reused
+       (assigned a new address). */
+    static const ReqFlagsType STICKY_FLAGS = INST_FETCH;
+
+  private:
+    /** Flag structure for the request. */
+    ReqFlags _reqflags;
+
+  public:
+    /** Accessor for flags. */
+    ReqFlags
+    getReqFlags()
+    {
+        return _reqflags;
+    }
+
+    /** Note that unlike other accessors, this function sets *specific
+       flags* (ORs them in); it does not assign its argument to the
+       _flags field.  Thus this method should rightly be called
+       setFlags() and not just flags(). */
+    void
+    setReqFlags(ReqFlags reqflags)
+    {
+        _reqflags.set(reqflags);
+    }
+
+
+  public:
     typedef MemCmd::Command Command;
 
     /// The command field of the packet.

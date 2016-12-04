@@ -196,7 +196,7 @@ ItbPageFault::invoke(ThreadContext *tc, StaticInstPtr inst)
     if (!success) {
         panic("Tried to execute unmapped address %#x.\n", pc);
     } else {
-        printf("page table lookup success\n");
+        //printf("page table lookup success, va:%#lx\n", vaddr.page());
         VAddr vaddr(pc);
         tc->getITBPtr()->insert(vaddr.page(), entry);
     }

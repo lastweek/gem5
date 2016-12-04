@@ -154,7 +154,10 @@ class InOrderThreadContext : public ThreadContext
     SETranslatingPortProxy &getMemProxy() { return thread->getMemProxy(); }
 
     /** Returns a pointer to this thread's process. */
-    Process *getProcessPtr() { return thread->getProcessPtr(); }
+    Process *getProcessPtr() {
+    	assert(thread);
+	return thread->getProcessPtr();
+    }
 
     /** Returns this thread's status. */
     Status status() const { return thread->status(); }

@@ -111,72 +111,101 @@ CoherentBus::init()
         warn("CoherentBus %s has no snooping ports attached!\n", name());
 }
 
-//debug//smile
-void 
-CoherentBus::trap(const Fault &fault, ThreadContext *tc)
+void ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
 {
-  if (tc) {
-     printf("%s:%s%d\n",__FILE__,__func__,__LINE__);
-     fault->invoke(tc, 0);
-  }
+    assert(tc);
+
+    VAddr vaddr = VAddr(pkt->getAddr());
+    Process *p = tc->getProcessPtr();
+    TlbEntry entry;
+
+    /* Maybe other faults */
+    assert(p);
+    if (!p->pTable)
+    	return;
+
+    bool success = p->pTable->lookup(vaddr.addr, entry);
+
+    if (!success) {
+        panic("Tried to execute unmapped address %#x.\n", vaddr.addr);
+    } else {
+        VAddr vaddr(pkt->getAddr());
+        tc->getITBPtr()->insert(vaddr.addr, entry);
+
+	PR("[%s:%d] setPaddr: %#lx\n",
+		__func__, __LINE__, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
+
+        pkt->setPaddr((entry.ppn << PageShift) +
+                      (vaddr.offset() & ~3));
+    }
+}
+
+void NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
+{
+    assert(tc);
+
+    VAddr vaddr = VAddr(pkt->getAddr());
+    Process *p = tc->getProcessPtr();
+    TlbEntry entry;
+
+    /* Maybe other faults */
+    assert(p);
+    if (!p->pTable)
+    	return;
+
+    bool success = p->pTable->lookup(vaddr.addr, entry);
+    if (!success) {
+        if (p->fixupStackFault(vaddr))
+            success = p->pTable->lookup(vaddr, entry);
+    }
+
+    if (!success) {
+        panic("Tried to access unmapped address %#x.\n", (Addr)vaddr);
+    } else {
+        VAddr vaddr(pkt->getAddr());
+        tc->getDTBPtr()->insert(vaddr.addr, entry);
+
+	PR("[%s:%d] setPaddr: %#lx\n",
+		__func__, __LINE__, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
+
+        pkt->setPaddr((entry.ppn << PageShift) +
+                      (vaddr.offset() & ~3));
+    }
 }
 
 void
 CoherentBus::doTLBAccess(PacketPtr pkt)
 {
-    //ThreadID tid = inst->readTid();
-
-    //setupMemRequest(inst, cache_req, acc_size, flags);
-
-    //@todo: HACK: the DTB expects the correct PC in the ThreadContext
-    //       but how if the memory accesses are speculative? Shouldn't
-    //       we send along the requestor's PC to the translate functions?
-    //ThreadContext *tc = cpu->thread[tid]->getTC();
-    //PCState old_pc = tc->pcState();
-    //tc->pcState() = inst->pcState();
-
-    //inst->fault = 
-    //    _tlb->translateAtomic(cache_req->memReq, tc, tlb_mode);
-    DPRINTF(CoherentBus, "TLB debug 1111\n");
     Fault fault = _tlb->translateAtomic_post(pkt);
-    //tc->pcState() = old_pc;
 
-    if (fault != NoFault) {
-        trap(fault, pkt->tc);
-    //    DPRINTF(CoherentBus, "[tid:%i]: %s encountered while translating "
-    //            "addr:%08p for [sn:%i].\n", tid, inst->fault->name(),
-    //            cache_req->memReq->getVaddr(), inst->seqNum);
+    if (fault == NoFault)
+    	return;
 
-    //    tlbBlocked[tid] = true;
-    //    tlbBlockSeqNum[tid] = inst->seqNum;
-
-        // Make sure nothing gets executed until after this faulting
-        // instruction gets handled.
-    //    inst->setSerializeAfter();
-
-        // Mark it as complete so it can pass through next stage.
-        // Fault Handling will happen at commit/graduation
-    //    cache_req->setCompleted();
+    if (pkt->TLBisExecute()) {
+        ItbPageFault_post(pkt, pkt->tc);
     } else {
-    //    DPRINTF(CoherentBus, "[tid:%i]: [sn:%i] virt. addr %08p translated "
-    //            "to phys. addr:%08p.\n", tid, inst->seqNum,
-    //            cache_req->memReq->getVaddr(),
-    //            cache_req->memReq->getPaddr());
+        NDtbMissFault_post(pkt, pkt->tc);
     }
 }
 
 bool
 CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 {
-    //pkt->setPaddr(448);//debug force physical addr//smile
-    if (pkt->tc)
-        doTLBAccess(pkt); 
-
-    printf("pkt: %p, tc: %p, pa: %#lx, va: %#lx\n",
-    	pkt,pkt->tc, pkt->getPaddr(),pkt->getAddr());
+    if (pkt->tc) {
+        PR("[%s:%d] Need to do TLB access\n", __func__, __LINE__);
+	doTLBAccess(pkt);
+    } else {
+        printf("[%s:%d] No need to do TLB access, PA: %#lx VA: %#lx; isInst: %d, isWrite: %d\n",
+		__func__, __LINE__, pkt->getPaddr(), pkt->getAddr(), pkt->TLBisExecute(),
+		pkt->TLBisWrite());
+	pkt->setPaddr(pkt->getAddr());
+        //assert(0);
+    }
+    PR("[%s:%d] After TLB, PA:%#lx\n", __func__, __LINE__,pkt->getPaddr());
 
     DPRINTF(CoherentBus, "Physical address is %x\n",
                 pkt->getPaddr());
+
     // determine the source port based on the id
     SlavePort *src_port = slavePorts[slave_port_id];
 

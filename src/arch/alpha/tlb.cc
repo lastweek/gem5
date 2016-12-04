@@ -448,33 +448,21 @@ TLB::translateInst(RequestPtr req, ThreadContext *tc)
 Fault
 TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
 {
-    //If this is a pal pc, then set PHYSICAL
-    //if (FullSystem && PcPAL(req->getPC()))
-    //    req->setFlags(Request::PHYSICAL);
-
-    //if (PcPAL(req->getPC())) {
-    //    // strip off PAL PC marker (lsb is 1)
-    //    req->setPaddr((req->getVaddr() & ~3) & PAddrImplMask);
-    //    fetch_hits++;
-    //    return NoFault;
-    //}
-
-    //if (req->getFlags() & Request::PHYSICAL) {
-    //    req->setPaddr(req->getVaddr());
-    //} else {
-        // verify that this is a good virtual address
-        if (!validVirtualAddress(pkt->getAddr())) {
+       if (!validVirtualAddress(pkt->getAddr())) {
+            PR("[%s:%d] Addr:%#lx is not valid\n",
+	    	__func__, __LINE__, pkt->getAddr());
             fetch_acv++;
             return new ItbAcvFault(pkt->getAddr());
         }
 
-
         // VA<42:41> == 2, VA<39:13> maps directly to PA<39:13> for EV5
         // VA<47:41> == 0x7e, VA<40:13> maps directly to PA<40:13> for EV6
         if (VAddrSpaceEV6(pkt->getAddr()) == 0x7e) {
+	    PR("[%s:%d] we are here, addr=%#lx", __func__, __LINE__, pkt->getAddr());
             // only valid in kernel mode
             if (ICM_CM(pkt->getRegTLB_icm()) !=
                 mode_kernel) {
+	    PR("[%s:%d] we are here, addr=%#lx", __func__, __LINE__, pkt->getAddr());
                 fetch_acv++;
                 return new ItbAcvFault(pkt->getAddr());
             }
@@ -486,10 +474,10 @@ TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
                 pkt->setPaddr(pkt->getPaddr() | ULL(0xf0000000000));
             else
                 pkt->setPaddr(pkt->getPaddr() & ULL(0xffffffffff));
+	    PR("[%s:%d] we are here, PAaddr=%#lx", __func__, __LINE__, pkt->getPaddr());
         } else {
             // not a physical address: need to look up pte
             int asn = DTB_ASN_ASN(pkt->getRegTLB_dtb_asn());
-            printf("asn = %#x\n",asn);
             TlbEntry *entry = lookup(VAddr(pkt->getAddr()).vpn(),
                               asn);
 
@@ -497,6 +485,11 @@ TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
                 fetch_misses++;
                 return new ItbPageFault(pkt->getAddr());
             }
+
+	    PR("[%s:%d] TLB hit, entry->ppn=%#lx offset=%#lx, Paddr=%#lx\n",
+	    	__func__,__LINE__,
+	    	(entry->ppn << PageShift), (VAddr(pkt->getAddr()).offset() & ~3),
+		(entry->ppn << PageShift) +(VAddr(pkt->getAddr()).offset()& ~3));
 
             pkt->setPaddr((entry->ppn << PageShift) +
                           (VAddr(pkt->getAddr()).offset()
@@ -516,11 +509,131 @@ TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
 
     // check that the physical address is ok (catch bad physical addresses)
     if (pkt->getPaddr() & ~PAddrImplMask) {
+        assert(0);
         return new MachineCheckFault();
     }
 
     return checkCacheability(req, true);
 
+}
+
+Fault
+TLB::translateData_post(RequestPtr req, PacketPtr pkt, bool write)
+{
+    ThreadContext *tc = pkt->tc;
+    mode_type mode =
+        (mode_type)DTB_CM_CM(tc->readMiscRegNoEffect(IPR_DTB_CM));
+
+    /**
+     * Check for alignment faults
+     */
+    if (pkt->getAddr() & (pkt->getSize() - 1)) {
+        DPRINTF(TLB, "Alignment Fault on %#x, size = %d\n", pkt->getAddr(),
+                pkt->getSize());
+        uint64_t flags = write ? MM_STAT_WR_MASK : 0;
+        return new DtbAlignmentFault(pkt->getAddr(), pkt->getReqFlags(), flags);
+    }
+
+        // verify that this is a good virtual address
+        if (!validVirtualAddress(pkt->getAddr())) {
+            if (write) { write_acv++; } else { read_acv++; }
+            uint64_t flags = (write ? MM_STAT_WR_MASK : 0) |
+                MM_STAT_BAD_VA_MASK |
+                MM_STAT_ACV_MASK;
+            return new DtbPageFault(pkt->getAddr(), pkt->getReqFlags(), flags);
+        }
+
+        // Check for "superpage" mapping
+        if (VAddrSpaceEV6(pkt->getAddr()) == 0x7e) {
+            // only valid in kernel mode
+            if (DTB_CM_CM(tc->readMiscRegNoEffect(IPR_DTB_CM)) !=
+                mode_kernel) {
+                if (write) { write_acv++; } else { read_acv++; }
+                uint64_t flags = ((write ? MM_STAT_WR_MASK : 0) |
+                                  MM_STAT_ACV_MASK);
+
+                return new DtbAcvFault(pkt->getAddr(), pkt->getReqFlags(),
+                                       flags);
+            }
+
+            pkt->setPaddr(pkt->getAddr() & PAddrImplMask);
+
+            // sign extend the physical address properly
+            if (pkt->getPaddr() & PAddrUncachedBit40)
+                pkt->setPaddr(pkt->getPaddr() | ULL(0xf0000000000));
+            else
+                pkt->setPaddr(pkt->getPaddr() & ULL(0xffffffffff));
+        } else {
+            if (write)
+                write_accesses++;
+            else
+                read_accesses++;
+
+            int asn = DTB_ASN_ASN(tc->readMiscRegNoEffect(IPR_DTB_ASN));
+
+            // not a physical address: need to look up pte
+            TlbEntry *entry = lookup(VAddr(pkt->getAddr()).vpn(), asn);
+
+            if (!entry) {
+                // page fault
+                if (write) { write_misses++; } else { read_misses++; }
+                uint64_t flags = (write ? MM_STAT_WR_MASK : 0) |
+                    MM_STAT_DTB_MISS_MASK;
+                return (pkt->getReqFlags() & Request::VPTE) ?
+                    (Fault)(new PDtbMissFault(pkt->getAddr(), pkt->getReqFlags(),
+                                              flags)) :
+                    (Fault)(new NDtbMissFault(pkt->getAddr(), pkt->getReqFlags(),
+                                              flags));
+            }
+
+            pkt->setPaddr((entry->ppn << PageShift) +
+                          VAddr(pkt->getAddr()).offset());
+
+            if (write) {
+                if (!(entry->xwe & MODE2MASK(mode))) {
+                    // declare the instruction access fault
+                    write_acv++;
+                    uint64_t flags = MM_STAT_WR_MASK |
+                        MM_STAT_ACV_MASK |
+                        (entry->fonw ? MM_STAT_FONW_MASK : 0);
+                    return new DtbPageFault(pkt->getAddr(), pkt->getReqFlags(),
+                                            flags);
+                }
+                if (entry->fonw) {
+                    write_acv++;
+                    uint64_t flags = MM_STAT_WR_MASK | MM_STAT_FONW_MASK;
+                    return new DtbPageFault(pkt->getAddr(), pkt->getReqFlags(),
+                                            flags);
+                }
+            } else {
+                if (!(entry->xre & MODE2MASK(mode))) {
+                    read_acv++;
+                    uint64_t flags = MM_STAT_ACV_MASK |
+                        (entry->fonr ? MM_STAT_FONR_MASK : 0);
+                    return new DtbAcvFault(pkt->getAddr(), pkt->getReqFlags(),
+                                           flags);
+                }
+                if (entry->fonr) {
+                    read_acv++;
+                    uint64_t flags = MM_STAT_FONR_MASK;
+                    return new DtbPageFault(pkt->getAddr(), pkt->getReqFlags(),
+                                            flags);
+                }
+            }
+        }
+
+        if (write)
+            write_hits++;
+        else
+            read_hits++;
+
+    // check that the physical address is ok (catch bad physical addresses)
+    if (pkt->getPaddr() & ~PAddrImplMask) {
+        assert(0);
+        return new MachineCheckFault();
+    }
+
+    return checkCacheability(req);
 }
 
 Fault
@@ -675,15 +788,10 @@ Fault
 TLB::translateAtomic_post(PacketPtr pkt)
 {
     RequestPtr req=0;
-    if (pkt->TLBisExecute()){
-        printf("TLB is execute\n");
-        return translateInst_post(req, pkt);
-
-    }
-    else{
-        printf("TLB is not execute\n");
-    //    //return translateData(req, tc, mode == Write);
-        return NoFault;
+    if (pkt->TLBisExecute()) {
+	return translateInst_post(req, pkt);
+    } else {
+        return translateData_post(req, pkt, pkt->TLBisWrite());
     }
 }
 

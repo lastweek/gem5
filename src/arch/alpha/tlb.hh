@@ -149,7 +149,9 @@ class TLB : public BaseTLB
   protected:
     Fault translateData(RequestPtr req, ThreadContext *tc, bool write);
     Fault translateInst(RequestPtr req, ThreadContext *tc);
+
     Fault translateInst_post(RequestPtr req, PacketPtr pkt);
+    Fault translateData_post(RequestPtr req, PacketPtr pkt, bool write);
 
   public:
     Fault translateAtomic(RequestPtr req, ThreadContext *tc, Mode mode);
