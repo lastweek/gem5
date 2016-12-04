@@ -891,6 +891,8 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
 #endif
     bool do_access = true;  // flag to suppress cache access
 
+    ThreadContext *tc = cpu->thread[tid]->getTC();
+
     // Special Handling if this is a split request
     CacheReqPtr cache_req;
     if (split_req == NULL)
@@ -903,7 +905,7 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
     // Make a new packet inside the CacheRequest object
     assert(cache_req);
     buildDataPacket(cache_req);
-
+    cache_req->dataPkt->tc = tc;
     // Special Handling for LL/SC or Compare/Swap
      bool is_write = cache_req->dataPkt->isWrite();
      RequestPtr mem_req = cache_req->dataPkt->req;

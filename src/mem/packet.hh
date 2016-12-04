@@ -65,6 +65,7 @@
 #include "mem/request.hh"
 #include "sim/core.hh"
 
+class ThreadContext;
 class Packet;
 typedef Packet *PacketPtr;
 typedef uint8_t* PacketDataPtr;
@@ -279,6 +280,7 @@ class Packet : public Printable
     uint64_t reg_ipr_alt_mode;
     bool _TLBisExecute;
     bool _TLBisWrite;
+    ThreadContext *tc;
   private:
    /**
     * A pointer to the data being transfered.  It can be differnt

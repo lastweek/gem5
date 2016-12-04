@@ -112,6 +112,11 @@ CoherentBus::init()
 }
 
 //debug//smile
+void 
+CoherentBus::trap(const Fault &fault, ThreadContext *tc)
+{
+  fault->invoke(tc, 0);
+}
 void
 CoherentBus::doTLBAccess(PacketPtr pkt)
 {
@@ -132,7 +137,8 @@ CoherentBus::doTLBAccess(PacketPtr pkt)
     Fault fault = _tlb->translateAtomic_post(pkt);
     //tc->pcState() = old_pc;
 
-    //if (inst->fault != NoFault) {
+    if (fault != NoFault) {
+    trap(fault, pkt->tc);
     //    DPRINTF(CoherentBus, "[tid:%i]: %s encountered while translating "
     //            "addr:%08p for [sn:%i].\n", tid, inst->fault->name(),
     //            cache_req->memReq->getVaddr(), inst->seqNum);
@@ -147,12 +153,12 @@ CoherentBus::doTLBAccess(PacketPtr pkt)
         // Mark it as complete so it can pass through next stage.
         // Fault Handling will happen at commit/graduation
     //    cache_req->setCompleted();
-    //} else {
+    } else {
     //    DPRINTF(CoherentBus, "[tid:%i]: [sn:%i] virt. addr %08p translated "
     //            "to phys. addr:%08p.\n", tid, inst->seqNum,
     //            cache_req->memReq->getVaddr(),
     //            cache_req->memReq->getPaddr());
-    //}
+    }
 }
 
 bool

@@ -79,6 +79,7 @@
 class CoherentBus : public BaseBus
 {
   private:
+    void trap(const Fault &fault, ThreadContext *tc);
     void doTLBAccess(PacketPtr pkt);
     bool tlbBlocked[ThePipeline::MaxThreads];
     InstSeqNum tlbBlockSeqNum[ThePipeline::MaxThreads];

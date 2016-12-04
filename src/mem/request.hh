@@ -120,6 +120,7 @@ class Request
     //TLB mode//smile
     bool isExecute;
     bool isWrite;
+    
   private:
     typedef uint8_t PrivateFlagsType;
     typedef ::Flags<PrivateFlagsType> PrivateFlags;
