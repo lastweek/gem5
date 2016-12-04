@@ -30,3 +30,8 @@ build/
 *.exe
 *.out
 *.app
+
+m5out/
+tags
+tests/
+parsetab.py

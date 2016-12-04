@@ -115,8 +115,12 @@ CoherentBus::init()
 void 
 CoherentBus::trap(const Fault &fault, ThreadContext *tc)
 {
-  fault->invoke(tc, 0);
+  if (tc) {
+     printf("%s:%s%d\n",__FILE__,__func__,__LINE__);
+     fault->invoke(tc, 0);
+  }
 }
+
 void
 CoherentBus::doTLBAccess(PacketPtr pkt)
 {
@@ -138,7 +142,7 @@ CoherentBus::doTLBAccess(PacketPtr pkt)
     //tc->pcState() = old_pc;
 
     if (fault != NoFault) {
-    trap(fault, pkt->tc);
+        trap(fault, pkt->tc);
     //    DPRINTF(CoherentBus, "[tid:%i]: %s encountered while translating "
     //            "addr:%08p for [sn:%i].\n", tid, inst->fault->name(),
     //            cache_req->memReq->getVaddr(), inst->seqNum);
@@ -165,7 +169,12 @@ bool
 CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 {
     //pkt->setPaddr(448);//debug force physical addr//smile
-    doTLBAccess(pkt); 
+    if (pkt->tc)
+        doTLBAccess(pkt); 
+
+    printf("pkt: %p, tc: %p, pa: %#lx, va: %#lx\n",
+    	pkt,pkt->tc, pkt->getPaddr(),pkt->getAddr());
+
     DPRINTF(CoherentBus, "Physical address is %x\n",
                 pkt->getPaddr());
     // determine the source port based on the id

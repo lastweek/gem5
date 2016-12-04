@@ -1500,6 +1500,7 @@ Cache<TagStore>::getTimingPacket()
         // in MSHR, so now that we are getting around to processing
         // it, just treat it as if we got a failure response
         pkt = new Packet(tgt_pkt);
+	pkt->tc = tgt_pkt->tc;
         pkt->cmd = MemCmd::UpgradeFailResp;
         pkt->senderState = mshr;
         pkt->firstWordTime = pkt->finishTime = curTick();
@@ -1524,6 +1525,7 @@ Cache<TagStore>::getTimingPacket()
             // check we could get a stale copy from memory  that might get used
             // in place of the dirty one.
             PacketPtr snoop_pkt = new Packet(tgt_pkt, true);
+	    snoop_pkt->tc = tgt_pkt->tc;
             snoop_pkt->setExpressSnoop();
             snoop_pkt->senderState = mshr;
             cpuSidePort->sendTimingSnoopReq(snoop_pkt);
@@ -1539,6 +1541,7 @@ Cache<TagStore>::getTimingPacket()
         }
 
         pkt = getBusPacket(tgt_pkt, blk, mshr->needsExclusive());
+	pkt->tc = tgt_pkt->tc;
 
         mshr->isForward = (pkt == NULL);
 
@@ -1547,6 +1550,7 @@ Cache<TagStore>::getTimingPacket()
             // make copy of current packet to forward, keep current
             // copy for response handling
             pkt = new Packet(tgt_pkt);
+	    pkt->tc = tgt_pkt->tc;
             pkt->allocate();
             if (pkt->isWrite()) {
                 pkt->setData(tgt_pkt->getPtr<uint8_t>());

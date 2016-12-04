@@ -906,6 +906,10 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
     assert(cache_req);
     buildDataPacket(cache_req);
     cache_req->dataPkt->tc = tc;
+    printf("[%s:%d] cache_req->dataPkt: %p, TC: %p, pa: %#lx addr: %#lx\n",
+    	__func__, __LINE__, cache_req->dataPkt, cache_req->dataPkt->tc,
+	cache_req->dataPkt->getPaddr(), cache_req->dataPkt->getAddr());
+
     // Special Handling for LL/SC or Compare/Swap
      bool is_write = cache_req->dataPkt->isWrite();
      RequestPtr mem_req = cache_req->dataPkt->req;

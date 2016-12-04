@@ -607,6 +607,7 @@ class Packet : public Printable
      */
     Packet(Packet *pkt, bool clearFlags = false)
         :  cmd(pkt->cmd), req(pkt->req),
+	   tc(pkt->tc),
            data(pkt->flags.isSet(STATIC_DATA) ? pkt->data : NULL),
            addr(pkt->addr), size(pkt->size), src(pkt->src), dest(pkt->dest),
            bytesValidStart(pkt->bytesValidStart), bytesValidEnd(pkt->bytesValidEnd),
