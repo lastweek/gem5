@@ -115,6 +115,7 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
     // remember if the packet is an express snoop
     bool is_express_snoop = pkt->isExpressSnoop();
 
+    printf("%s:%s:%d\n", __FILE__, __func__, __LINE__);
     // test if the bus should be considered occupied for the current
     // port, and exclude express snoops from the check
     if (!is_express_snoop && !reqLayer.tryTiming(src_port)) {

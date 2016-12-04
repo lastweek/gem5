@@ -853,6 +853,9 @@ class Packet : public Printable
 
     void print(std::ostream &o, int verbosity = 0,
                const std::string &prefix = "") const;
+
+    public:
+    ThreadContext *tc;
 };
 
 #endif //__MEM_PACKET_HH

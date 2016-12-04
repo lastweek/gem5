@@ -166,6 +166,8 @@ FALRU::accessBlock(Addr addr, int &lat, int context_src, int *inCache)
     Addr blkAddr = blkAlign(addr);
     FALRUBlk* blk = hashLookup(blkAddr);
 
+    printf("~~~%s\n",__FILE__);
+
     if (blk && blk->isValid()) {
         assert(blk->tag == blkAddr);
         tmp_in_cache = blk->inCache;

@@ -845,6 +845,7 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
     // Make a new packet inside the CacheRequest object
     assert(cache_req);
     buildDataPacket(cache_req);
+    cache_req->dataPkt->memReq->tc = tcBase(tid);
 
     // Special Handling for LL/SC or Compare/Swap
      bool is_write = cache_req->dataPkt->isWrite();

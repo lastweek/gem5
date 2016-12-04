@@ -31,7 +31,6 @@ from m5.proxy import *
 from MemObject import MemObject
 from Prefetcher import BasePrefetcher
 
-
 class BaseCache(MemObject):
     type = 'BaseCache'
     assoc = Param.Int("associativity")

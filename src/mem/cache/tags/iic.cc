@@ -227,6 +227,7 @@ IIC::accessBlock(Addr addr, int &lat, int context_src)
     int set_lat;
 
     unsigned long chain_ptr = tagNull;
+    printf("~~~%s\n",__FILE__);
 
     if (PROFILE_IIC)
         setAccess.sample(set);

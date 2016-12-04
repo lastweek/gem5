@@ -72,6 +72,9 @@ LRU::LRU(unsigned _numSets, unsigned _blkSize, unsigned _assoc,
     /** @todo Make warmup percentage a parameter. */
     warmupBound = numSets * assoc;
 
+    printf("hitLatency=%u blkSize=%u numSets=%u assoc=%u setShift=%u tagShift=%u \n",
+    	hitLatency, blkSize, numSets, assoc, setShift, tagShift);
+
     sets = new CacheSet[numSets];
     blks = new BlkType[numSets * assoc];
     // allocate data storage in one big chunk
@@ -121,6 +124,8 @@ LRU::accessBlock(Addr addr, int &lat, int master_id)
     Addr tag = extractTag(addr);
     unsigned set = extractSet(addr);
     BlkType *blk = sets[set].findBlk(tag);
+    printf("~~~%s:%s:%d\n",__FILE__,__func__,__LINE__);
+    printf("~~~addr=%#lx tag=%#lx set=%d\n", addr, tag, set);
     lat = hitLatency;
     if (blk != NULL) {
         // move this block to head of the MRU list

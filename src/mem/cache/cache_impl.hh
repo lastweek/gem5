@@ -1608,6 +1608,7 @@ template<class TagStore>
 bool
 Cache<TagStore>::CpuSidePort::recvTimingReq(PacketPtr pkt)
 {
+    printf("%s:%s:%d\n", __FILE__, __func__, __LINE__);
     // always let inhibited requests through even if blocked
     if (!pkt->memInhibitAsserted() && blocked) {
         DPRINTF(Cache,"Scheduling a retry while blocked\n");
