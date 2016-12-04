@@ -828,9 +828,7 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
                          CacheReqPtr split_req)
 {
     Fault fault = NoFault;
-#if TRACING_ON
     ThreadID tid = inst->readTid();
-#endif
     bool do_access = true;  // flag to suppress cache access
 
     // Special Handling if this is a split request
@@ -845,7 +843,7 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
     // Make a new packet inside the CacheRequest object
     assert(cache_req);
     buildDataPacket(cache_req);
-    cache_req->dataPkt->memReq->tc = tcBase(tid);
+    cache_req->dataPkt->tc = cpu->tcBase(tid);
 
     // Special Handling for LL/SC or Compare/Swap
      bool is_write = cache_req->dataPkt->isWrite();

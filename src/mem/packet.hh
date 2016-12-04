@@ -65,6 +65,8 @@
 #include "mem/request.hh"
 #include "sim/core.hh"
 
+
+class ThreadContext;
 class Packet;
 typedef Packet *PacketPtr;
 typedef uint8_t* PacketDataPtr;
@@ -271,6 +273,8 @@ class Packet : public Printable
 
     /// A pointer to the original request.
     RequestPtr req;
+
+   ThreadContext *tc;
 
   private:
    /**
@@ -854,8 +858,6 @@ class Packet : public Printable
     void print(std::ostream &o, int verbosity = 0,
                const std::string &prefix = "") const;
 
-    public:
-    ThreadContext *tc;
 };
 
 #endif //__MEM_PACKET_HH
