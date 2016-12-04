@@ -1490,9 +1490,13 @@ Cache<TagStore>::getTimingPacket()
         return NULL;
     }
 
+    PacketPtr pkt = NULL;
+
     // use request from 1st target
     PacketPtr tgt_pkt = mshr->getTarget()->pkt;
-    PacketPtr pkt = NULL;
+
+    PR("[%s:%d] pkt: %p, tc: %p, pa: %#lx va: %#lx\n", __func__, __LINE__,
+    	tgt_pkt, tgt_pkt->tc, tgt_pkt->getPaddr(), tgt_pkt->getAddr());
 
     if (tgt_pkt->cmd == MemCmd::SCUpgradeFailReq ||
         tgt_pkt->cmd == MemCmd::StoreCondFailReq) {

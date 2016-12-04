@@ -627,6 +627,8 @@ class Packet : public Printable
            bytesValidStart(0), bytesValidEnd(0),
            time(curTick()), senderState(NULL)
     {
+        paddr = 0;
+	tc = NULL;
         reg_ipr_icm = req->getRegTLB_icm();
         reg_ipr_dtb_asn = req->getRegTLB_dtb_asn();
         reg_ipr_dtb_cm = req->getRegTLB_dtb_cm();
@@ -654,6 +656,8 @@ class Packet : public Printable
            bytesValidStart(0), bytesValidEnd(0),
            time(curTick()), senderState(NULL)
     {
+        paddr = 0;
+	tc = NULL;
         reg_ipr_icm = req->getRegTLB_icm();
         reg_ipr_dtb_asn = req->getRegTLB_dtb_asn();
         reg_ipr_dtb_cm = req->getRegTLB_dtb_cm();
@@ -683,6 +687,7 @@ class Packet : public Printable
            bytesValidStart(pkt->bytesValidStart), bytesValidEnd(pkt->bytesValidEnd),
            time(curTick()), senderState(pkt->senderState)
     {
+        paddr = 0;
         if (!clearFlags)
             flags.set(pkt->flags & COPY_FLAGS);
 

@@ -52,6 +52,7 @@
 #include "debug/BusAddrRanges.hh"
 #include "debug/CoherentBus.hh"
 #include "mem/coherent_bus.hh"
+#include "cpu/thread_context.hh"
 
 using namespace std;
 using namespace TheISA;
@@ -182,24 +183,30 @@ CoherentBus::doTLBAccess(PacketPtr pkt)
     	return;
 
     if (pkt->TLBisExecute()) {
+        PR("Before calling ItbPageFault_post, pkt: %p, pkt->tc: %p\n",
+		pkt, pkt->tc);
         ItbPageFault_post(pkt, pkt->tc);
     } else {
         NDtbMissFault_post(pkt, pkt->tc);
     }
 }
 
+static ThreadContext *saved_tc;
+
 bool
 CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 {
     if (pkt->tc) {
-        PR("[%s:%d] Need to do TLB access\n", __func__, __LINE__);
+        PR("[%s:%d] Need to do TLB access, tc=%p\n", __func__, __LINE__, pkt->tc);
 	doTLBAccess(pkt);
+	saved_tc = pkt->tc;
     } else {
-        printf("[%s:%d] No need to do TLB access, PA: %#lx VA: %#lx; isInst: %d, isWrite: %d\n",
+        PR("[%s:%d] No TC, used saved TC PA: %#lx VA: %#lx; isInst: %d, isWrite: %d\n",
 		__func__, __LINE__, pkt->getPaddr(), pkt->getAddr(), pkt->TLBisExecute(),
 		pkt->TLBisWrite());
-	pkt->setPaddr(pkt->getAddr());
-        //assert(0);
+
+	pkt->tc = saved_tc;
+	doTLBAccess(pkt);
     }
     PR("[%s:%d] After TLB, PA:%#lx\n", __func__, __LINE__,pkt->getPaddr());
 

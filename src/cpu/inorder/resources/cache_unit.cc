@@ -905,6 +905,8 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
     // Make a new packet inside the CacheRequest object
     assert(cache_req);
     buildDataPacket(cache_req);
+
+    assert(tc);
     cache_req->dataPkt->tc = tc;
     PR("[%s:%d] cache_req->dataPkt: %p, TC: %p, pa: %#lx addr: %#lx\n",
     	__func__, __LINE__, cache_req->dataPkt, cache_req->dataPkt->tc,
