@@ -41,9 +41,11 @@
 
 from MemObject import MemObject
 from m5.params import *
-
-#TLB move to memory-side//
 from m5.defines import buildEnv
+
+from BaseTLB import BaseTLB
+
+# TLB move to memory-side//
 if buildEnv['TARGET_ISA'] == 'alpha':
     from AlphaTLB import AlphaDTB, AlphaITB
     from AlphaInterrupts import AlphaInterrupts
@@ -78,7 +80,6 @@ class BaseBus(MemObject):
 	    itb = Param.AlphaTLB(AlphaITB(), "Instruction TLB")
             interrupts = Param.AlphaInterrupts(
 	            NULL, "Interrupt Controller")
-
 
 class NoncoherentBus(BaseBus):
     type = 'NoncoherentBus'

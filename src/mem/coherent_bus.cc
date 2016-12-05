@@ -62,8 +62,12 @@ CoherentBus::CoherentBus(const CoherentBusParams *p)
       respLayer(*this, ".respLayer", p->clock),
       snoopRespLayer(*this, ".snoopRespLayer", p->clock)
 {
-    //TLB setting//
-    _tlb = p->itb;
+   /*
+    * Memory-Side TLB
+    */
+   itb = p->itb;
+   dtb = p->dtb;
+
     // create the ports based on the size of the master and slave
     // vector ports, and the presence of the default port, the ports
     // are enumerated starting from zero
@@ -112,7 +116,7 @@ CoherentBus::init()
         warn("CoherentBus %s has no snooping ports attached!\n", name());
 }
 
-void ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
+void CoherentBus::ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
 {
     assert(tc);
 
@@ -131,9 +135,9 @@ void ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
         panic("Tried to execute unmapped address %#x.\n", vaddr.addr);
     } else {
         VAddr vaddr(pkt->getAddr());
-        tc->getITBPtr()->insert(vaddr.addr, entry);
+        itb->insert(vaddr.addr, entry);
 
-	PR("[%s:%d] setPaddr: %#lx\n",
+	DPRINTF(CoherentBus, "[%s:%d] setPaddr: %#lx\n",
 		__func__, __LINE__, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
 
         pkt->setPaddr((entry.ppn << PageShift) +
@@ -141,7 +145,7 @@ void ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
     }
 }
 
-void NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
+void CoherentBus::NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
 {
     assert(tc);
 
@@ -164,9 +168,9 @@ void NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
         panic("Tried to access unmapped address %#x.\n", (Addr)vaddr);
     } else {
         VAddr vaddr(pkt->getAddr());
-        tc->getDTBPtr()->insert(vaddr.addr, entry);
+        dtb->insert(vaddr.addr, entry);
 
-	PR("[%s:%d] setPaddr: %#lx\n",
+	DPRINTF(CoherentBus, "[%s:%d] setPaddr: %#lx\n",
 		__func__, __LINE__, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
 
         pkt->setPaddr((entry.ppn << PageShift) +
@@ -177,14 +181,17 @@ void NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
 void
 CoherentBus::doTLBAccess(PacketPtr pkt)
 {
-    Fault fault = _tlb->translateAtomic_post(pkt);
+    Fault fault;
+    
+    if (pkt->TLBisExecute())
+    	fault = itb->translateAtomic_post(pkt);
+    else
+    	fault = dtb->translateAtomic_post(pkt);
 
     if (fault == NoFault)
     	return;
 
     if (pkt->TLBisExecute()) {
-        PR("Before calling ItbPageFault_post, pkt: %p, pkt->tc: %p\n",
-		pkt, pkt->tc);
         ItbPageFault_post(pkt, pkt->tc);
     } else {
         NDtbMissFault_post(pkt, pkt->tc);
@@ -197,18 +204,26 @@ bool
 CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 {
     if (pkt->tc) {
-        PR("[%s:%d] Need to do TLB access, tc=%p\n", __func__, __LINE__, pkt->tc);
+        DPRINTF(CoherentBus, "[%s:%d] Need to do TLB access, tc=%p\n",
+		__func__, __LINE__, pkt->tc);
 	doTLBAccess(pkt);
 	saved_tc = pkt->tc;
     } else {
-        PR("[%s:%d] No TC, used saved TC PA: %#lx VA: %#lx; isInst: %d, isWrite: %d\n",
+        DPRINTF(CoherentBus, "[%s:%d] No TC, used saved TC PA: %#lx VA: %#lx; isInst: %d, isWrite: %d\n",
 		__func__, __LINE__, pkt->getPaddr(), pkt->getAddr(), pkt->TLBisExecute(),
 		pkt->TLBisWrite());
 
+	/*
+	 * A package issued by cache directly. Could be
+	 * replacement or writeback packages. Since now
+	 * we only have one tc, hence using the saved one.
+	 */
 	pkt->tc = saved_tc;
 	doTLBAccess(pkt);
     }
-    PR("[%s:%d] After TLB, PA:%#lx\n", __func__, __LINE__,pkt->getPaddr());
+
+    DPRINTF(CoherentBus, "[%s:%d] After doTLBAccess, PA:%#lx\n",
+    	__func__, __LINE__,pkt->getPaddr());
 
     DPRINTF(CoherentBus, "Physical address is %x\n",
                 pkt->getPaddr());

@@ -449,7 +449,7 @@ Fault
 TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
 {
        if (!validVirtualAddress(pkt->getAddr())) {
-            PR("[%s:%d] Addr:%#lx is not valid\n",
+            DPRINTF(TLB, "[%s:%d] Addr:%#lx is not valid\n",
 	    	__func__, __LINE__, pkt->getAddr());
             fetch_acv++;
             return new ItbAcvFault(pkt->getAddr());
@@ -458,11 +458,12 @@ TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
         // VA<42:41> == 2, VA<39:13> maps directly to PA<39:13> for EV5
         // VA<47:41> == 0x7e, VA<40:13> maps directly to PA<40:13> for EV6
         if (VAddrSpaceEV6(pkt->getAddr()) == 0x7e) {
-	    PR("[%s:%d] we are here, addr=%#lx", __func__, __LINE__, pkt->getAddr());
+	    DPRINTF(TLB, "[%s:%d] we are here, addr=%#lx",
+	    	__func__, __LINE__, pkt->getAddr());
+
             // only valid in kernel mode
             if (ICM_CM(pkt->getRegTLB_icm()) !=
                 mode_kernel) {
-	    PR("[%s:%d] we are here, addr=%#lx", __func__, __LINE__, pkt->getAddr());
                 fetch_acv++;
                 return new ItbAcvFault(pkt->getAddr());
             }
@@ -474,7 +475,9 @@ TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
                 pkt->setPaddr(pkt->getPaddr() | ULL(0xf0000000000));
             else
                 pkt->setPaddr(pkt->getPaddr() & ULL(0xffffffffff));
-	    PR("[%s:%d] we are here, PAaddr=%#lx", __func__, __LINE__, pkt->getPaddr());
+
+	    DPRINTF(TLB, "[%s:%d] we are here, PAaddr=%#lx",
+	    	__func__, __LINE__, pkt->getPaddr());
         } else {
             // not a physical address: need to look up pte
             int asn = DTB_ASN_ASN(pkt->getRegTLB_dtb_asn());
@@ -486,7 +489,7 @@ TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
                 return new ItbPageFault(pkt->getAddr());
             }
 
-	    PR("[%s:%d] TLB hit, entry->ppn=%#lx offset=%#lx, Paddr=%#lx\n",
+	    DPRINTF(TLB, "[%s:%d] ITLB hit, entry->ppn=%#lx offset=%#lx, Paddr=%#lx\n",
 	    	__func__,__LINE__,
 	    	(entry->ppn << PageShift), (VAddr(pkt->getAddr()).offset() & ~3),
 		(entry->ppn << PageShift) +(VAddr(pkt->getAddr()).offset()& ~3));
@@ -505,7 +508,6 @@ TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
 
             fetch_hits++;
         }
-    //}
 
     // check that the physical address is ok (catch bad physical addresses)
     if (pkt->getPaddr() & ~PAddrImplMask) {
@@ -513,7 +515,7 @@ TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
         return new MachineCheckFault();
     }
 
-    return checkCacheability(req, true);
+    return NoFault;
 
 }
 
@@ -586,6 +588,11 @@ TLB::translateData_post(RequestPtr req, PacketPtr pkt, bool write)
                                               flags));
             }
 
+	    DPRINTF(TLB, "[%s:%d] DTLB hit, entry->ppn=%#lx offset=%#lx, Paddr=%#lx\n",
+	    	__func__,__LINE__,
+	    	(entry->ppn << PageShift), (VAddr(pkt->getAddr()).offset() & ~3),
+		(entry->ppn << PageShift) +(VAddr(pkt->getAddr()).offset()& ~3));
+
             pkt->setPaddr((entry->ppn << PageShift) +
                           VAddr(pkt->getAddr()).offset());
 
@@ -633,7 +640,7 @@ TLB::translateData_post(RequestPtr req, PacketPtr pkt, bool write)
         return new MachineCheckFault();
     }
 
-    return checkCacheability(req);
+    return NoFault;
 }
 
 Fault
@@ -787,6 +794,7 @@ TLB::translateAtomic(RequestPtr req, ThreadContext *tc, Mode mode)
 Fault
 TLB::translateAtomic_post(PacketPtr pkt)
 {
+    DPRINTF(TLB, "%s:%d\n", __func__, __LINE__);
     RequestPtr req=0;
     if (pkt->TLBisExecute()) {
 	return translateInst_post(req, pkt);

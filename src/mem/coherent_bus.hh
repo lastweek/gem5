@@ -81,11 +81,14 @@ class CoherentBus : public BaseBus
   private:
     void trap(PacketPtr pkt, ThreadContext *tc);
     void doTLBAccess(PacketPtr pkt);
+    void ItbPageFault_post(PacketPtr pkt, ThreadContext *tc);
+    void NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc);
     bool tlbBlocked[ThePipeline::MaxThreads];
     InstSeqNum tlbBlockSeqNum[ThePipeline::MaxThreads];
  
     TheISA::TLB* tlb();
-    TheISA::TLB *_tlb;
+    TheISA::TLB *itb;
+    TheISA::TLB *dtb;
 
   protected:
 
