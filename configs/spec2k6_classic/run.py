@@ -37,6 +37,7 @@ import sys
 import m5
 from m5.defines import buildEnv
 from m5.objects import *
+from m5.params import *
 from m5.util import addToPath, fatal
 
 addToPath('../common')
@@ -74,6 +75,9 @@ if '--ruby' in sys.argv:
 
 parser.add_option("-b", "--benchmark", default="",
                  help="The benchmark to be loaded.")
+
+parser.add_option("-l", "--memlatency", default="30ns", type="string",
+		help="Total latency of memory-side TLB+memory")
 
 (options, args) = parser.parse_args()
 
@@ -197,7 +201,10 @@ else:
         system.cpu[i].dcache.mem_side = system.membus.slave
         system.cpu[i].createInterruptController()
     system.system_port = system.membus.slave
+
     system.physmem.port = system.membus.master
+    system.physmem.latency = options.memlatency
+    
     #CacheConfig.config_cache(options, system)
 root = Root(full_system = False, system = system)
 Simulation.run(options, root, system, FutureClass)

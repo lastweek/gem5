@@ -182,7 +182,7 @@ void
 CoherentBus::doTLBAccess(PacketPtr pkt)
 {
     Fault fault;
-    
+
     if (pkt->TLBisExecute())
     	fault = itb->translateAtomic_post(pkt);
     else
