@@ -204,8 +204,8 @@ bool
 CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 {
     if (pkt->tc) {
-        DPRINTF(CoherentBus, "[%s:%d] Need to do TLB access, tc=%p\n",
-		__func__, __LINE__, pkt->tc);
+        DPRINTF(CoherentBus, "[%s:%d] Need to do TLB access, tc=%p, VA: %#lx\n",
+		__func__, __LINE__, pkt->tc, pkt->getAddr());
 	doTLBAccess(pkt);
 	saved_tc = pkt->tc;
     } else {
