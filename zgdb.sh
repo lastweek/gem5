@@ -3,8 +3,8 @@
 BENCH=sjeng
 OUTPUT_DIR=tests/test1/${BENCH}
 NR_MAXINSTS=2
-TLB_MEMORY_LATENCY=40ns
-#DEBUG_FLAG=--debug-flag=TLB,CoherentBus,InOrderCPU,Cache
+TLB_MEMORY_LATENCY=3000ns
+DEBUG_FLAG=--debug-flag=TLB,CoherentBus,InOrderCPU,Cache
 
 gdb --args \
 	./build/ALPHA_MESI_CMP_directory/gem5.opt		\

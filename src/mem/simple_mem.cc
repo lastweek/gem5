@@ -53,9 +53,9 @@ SimpleMemory::SimpleMemory(const SimpleMemoryParams* p) :
     lat_var(p->latency_var), bandwidth(p->bandwidth),
     isBusy(false), retryReq(false), releaseEvent(this)
 {
-    printf("[%s:%s:%d] Memory-Side Latency: %d\n",
+    printf("[%s:%s:%d] Memory-Side Latency: %lu Bandwidth: %lf\n",
     	__FILE__, __func__, __LINE__,
-	p->latency);
+	p->latency, p->bandwidth);
 }
 
 void

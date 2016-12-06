@@ -227,7 +227,6 @@ Cache<TagStore>::satisfyCpuSideRequest(PacketPtr pkt, BlkType *blk,
 //
 /////////////////////////////////////////////////////
 
-
 template<class TagStore>
 void
 Cache<TagStore>::markInService(MSHR *mshr, PacketPtr pkt)
@@ -845,7 +844,8 @@ Cache<TagStore>::handleResponse(PacketPtr pkt)
                 "cmd: %s\n", pkt->getAddr(), pkt->cmdString());
     }
 
-    DPRINTF(Cache, "Handling response to %x\n", pkt->getAddr());
+    DPRINTF(Cache, "[%s:%d] Handling response to %x\n",
+    	__func__, __LINE__, pkt->getAddr());
 
     MSHRQueue *mq = mshr->queue;
     bool wasFull = mq->isFull();
