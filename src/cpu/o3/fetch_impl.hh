@@ -604,18 +604,26 @@ DefaultFetch<Impl>::finishTranslation(Fault fault, RequestPtr mem_req)
         // Check that we're not going off into random memory
         // If we have, just wait around for commit to squash something and put
         // us on the right track
-        if (!cpu->system->isMemAddr(mem_req->getPaddr())) {
-            warn("Address %#x is outside of physical memory, stopping fetch\n",
-                    mem_req->getPaddr());
-            fetchStatus[tid] = NoGoodAddr;
-            delete mem_req;
-            memReq[tid] = NULL;
-            return;
-        }
+        //if (!cpu->system->isMemAddr(mem_req->getPaddr())) {
+        //    warn("Address %#x is outside of physical memory, stopping fetch\n",
+        //            mem_req->getPaddr());
+        //    fetchStatus[tid] = NoGoodAddr;
+        //    delete mem_req;
+        //    memReq[tid] = NULL;
+        //    return;
+        //}
 
         // Build packet here.
         PacketPtr data_pkt = new Packet(mem_req, MemCmd::ReadReq);
         data_pkt->dataDynamicArray(new uint8_t[cacheBlkSize]);
+
+	data_pkt->tc = cpu->thread[tid]->getTC();
+	data_pkt->setAddr(mem_req->getVaddr());
+	data_pkt->setPaddr(0);
+	data_pkt->_TLBisExecute = true;
+
+        assert(data_pkt->tc);
+	assert(data_pkt->getAddr());
 
         cacheDataPC[tid] = block_PC;
         cacheDataValid[tid] = false;

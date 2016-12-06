@@ -523,6 +523,7 @@ Fault
 TLB::translateData_post(RequestPtr req, PacketPtr pkt, bool write)
 {
     ThreadContext *tc = pkt->tc;
+    assert(tc);
     mode_type mode =
         (mode_type)DTB_CM_CM(tc->readMiscRegNoEffect(IPR_DTB_CM));
 
@@ -807,8 +808,26 @@ void
 TLB::translateTiming(RequestPtr req, ThreadContext *tc,
         Translation *translation, Mode mode)
 {
+    Fault fault;
+
     assert(translation);
-    translation->finish(translateAtomic(req, tc, mode), req, tc, mode);
+
+    /*
+     * Workaround for the first instruction
+     * the nextPC was set properly by default
+     */
+    if (req->getVaddr() == 0) {
+        printf("[%s:%d] Get req->getVaddr = 0\n", __func__, __LINE__);
+        fault = new ItbPageFault(req->getVaddr());
+    } else {
+        /*
+	 * NO TLB in CPU-side
+	 * Always return NoFault, to the finish() can access cache directly
+	 */
+        fault = NoFault;
+    }
+
+    translation->finish(fault, req, tc, mode);
 }
 
 Fault
