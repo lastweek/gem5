@@ -595,7 +595,7 @@ class Packet : public Printable
     bool TLBisExecute() const { return _TLBisExecute; }
     bool TLBisWrite() const { return _TLBisWrite; }
 
-    unsigned getSize() const  { assert(flags.isSet(VALID_SIZE)); return size; }
+    unsigned getSize() const  { return size; }
     Addr getOffset(int blkSize) const { return getAddr() & (Addr)(blkSize - 1); }
 
     /**
@@ -633,6 +633,8 @@ class Packet : public Printable
            bytesValidStart(0), bytesValidEnd(0),
            time(curTick()), senderState(NULL)
     {
+	/* Save the vaddress from the request */
+        addr = req->getVaddr();
         paddr = 0;
 	tc = NULL;
         reg_ipr_icm = req->getRegTLB_icm();
@@ -649,6 +651,7 @@ class Packet : public Printable
             size = req->getSize();
             flags.set(VALID_SIZE);
         }
+	size = req->getSize();
     }
 
     /**
@@ -662,6 +665,8 @@ class Packet : public Printable
            bytesValidStart(0), bytesValidEnd(0),
            time(curTick()), senderState(NULL)
     {
+	/* Save the vaddress from the request */
+        addr = req->getVaddr();
         paddr = 0;
 	tc = NULL;
         reg_ipr_icm = req->getRegTLB_icm();
@@ -674,7 +679,7 @@ class Packet : public Printable
             addr = req->getPaddr() & ~(_blkSize - 1);
             flags.set(VALID_ADDR);
         }
-        size = _blkSize;
+        size = req->getSize();
         flags.set(VALID_SIZE);
     }
 
@@ -693,6 +698,8 @@ class Packet : public Printable
            bytesValidStart(pkt->bytesValidStart), bytesValidEnd(pkt->bytesValidEnd),
            time(curTick()), senderState(pkt->senderState)
     {
+        size = pkt->getSize();
+        _TLBisExecute = pkt->_TLBisExecute;
         paddr = 0;
         if (!clearFlags)
             flags.set(pkt->flags & COPY_FLAGS);
@@ -792,7 +799,7 @@ class Packet : public Printable
     void
     setSize(unsigned size)
     {
-        assert(!flags.isSet(VALID_SIZE));
+        //assert(!flags.isSet(VALID_SIZE));
 
         this->size = size;
         flags.set(VALID_SIZE);

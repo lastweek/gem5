@@ -631,6 +631,9 @@ DefaultFetch<Impl>::finishTranslation(Fault fault, RequestPtr mem_req)
 
         fetchedCacheLines++;
 
+	DPRINTF(Fetch, "[%s:%d] pkt: %p, addr: %#lx \n",
+		__func__,__LINE__, data_pkt, data_pkt->getAddr());
+
         // Access the cache.
         if (!cpu->getInstPort().sendTimingReq(data_pkt)) {
             assert(retryPkt == NULL);

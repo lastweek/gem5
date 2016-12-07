@@ -195,10 +195,14 @@ TLB::lookup(Addr vpn, uint8_t asn)
                 ++i;
             }
         }
+    } else {
+         DPRINTF(TLB, "Hit in EntryCache: vpn=%#x, asn=%#x -> %s ppn=%#x\n",
+	      vpn, (int)asn, retval ? "hit" : "miss", retval ? retval->ppn : 0);
     }
 
-    DPRINTF(TLB, "lookup %#x, asn %#x -> %s ppn %#x\n", vpn, (int)asn,
+    DPRINTF(TLB, "lookup: vpn=%#x, asn=%#x -> %s ppn=%#x\n", vpn, (int)asn,
             retval ? "hit" : "miss", retval ? retval->ppn : 0);
+
     return retval;
 }
 
@@ -653,12 +657,12 @@ TLB::translateData(RequestPtr req, ThreadContext *tc, bool write)
     /**
      * Check for alignment faults
      */
-    if (req->getVaddr() & (req->getSize() - 1)) {
-        DPRINTF(TLB, "Alignment Fault on %#x, size = %d\n", req->getVaddr(),
-                req->getSize());
-        uint64_t flags = write ? MM_STAT_WR_MASK : 0;
-        return new DtbAlignmentFault(req->getVaddr(), req->getFlags(), flags);
-    }
+    //if (req->getVaddr() & (req->getSize() - 1)) {
+    //    DPRINTF(TLB, "Alignment Fault on %#x, size = %d\n", req->getVaddr(),
+    //            req->getSize());
+    //    uint64_t flags = write ? MM_STAT_WR_MASK : 0;
+    //    return new DtbAlignmentFault(req->getVaddr(), req->getFlags(), flags);
+    //}
 
     if (PcPAL(req->getPC())) {
         mode = (req->getFlags() & Request::ALTMODE) ?
@@ -817,8 +821,11 @@ TLB::translateTiming(RequestPtr req, ThreadContext *tc,
      * the nextPC was set properly by default
      */
     if (req->getVaddr() == 0) {
-        printf("[%s:%d] Get req->getVaddr = 0\n", __func__, __LINE__);
-        fault = new ItbPageFault(req->getVaddr());
+        printf("[%s:%d] Get req->getVaddr = 0",
+		__func__, __LINE__);
+	
+       fault = new ItbPageFault(req->getVaddr());
+       //fault = new DtbPageFault(req->getVaddr());
     } else {
         /*
 	 * NO TLB in CPU-side

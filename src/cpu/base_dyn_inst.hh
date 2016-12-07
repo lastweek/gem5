@@ -890,8 +890,17 @@ BaseDynInst<Impl>::readMem(Addr addr, uint8_t *data,
         initiateTranslation(req, sreqLow, sreqHigh, NULL, BaseTLB::Read);
     }
 
+    /*
+     * Set req's PA to VA
+     * Since we do not have TLB in CPU-side
+     */
+    req->setPaddr(req->getVaddr());
+
     if (translationCompleted()) {
         if (fault == NoFault) {
+	    printf("[%s:%s:%d] NoFault, req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",
+	    	__FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
+
             effAddr = req->getVaddr();
             effSize = size;
             instFlags[EffAddrValid] = true;
@@ -904,6 +913,10 @@ BaseDynInst<Impl>::readMem(Addr addr, uint8_t *data,
             }
             fault = cpu->read(req, sreqLow, sreqHigh, data, lqIdx);
         } else {
+	    printf("[%s:%s:%d] Fault!! req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",
+	    	__FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
+
+
             // Commit will have to clean up whatever happened.  Set this
             // instruction as executed.
             this->setExecuted();
@@ -953,7 +966,16 @@ BaseDynInst<Impl>::writeMem(uint8_t *data, unsigned size,
         initiateTranslation(req, sreqLow, sreqHigh, res, BaseTLB::Write);
     }
 
+    /*
+     * Set req's PA to VA
+     * Since we do not have TLB in CPU-side
+     */
+    req->setPaddr(req->getVaddr());
+
     if (fault == NoFault && translationCompleted()) {
+ 	 printf("[%s:%s:%d] NoFault, req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",
+ 	   	__FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
+
         effAddr = req->getVaddr();
         effSize = size;
         instFlags[EffAddrValid] = true;
@@ -965,6 +987,10 @@ BaseDynInst<Impl>::writeMem(uint8_t *data, unsigned size,
             reqToVerify = new Request(*req);
         }
         fault = cpu->write(req, sreqLow, sreqHigh, data, sqIdx);
+    } else {
+	printf("[%s:%s:%d] Fault!! req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",
+	 __FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
+
     }
 
     return fault;

@@ -498,6 +498,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
 
     bool needsResponse = pkt->needsResponse();
 
+    DPRINTF(Cache, "pkt: %p\n", pkt);
     DPRINTF(Cache, "satisfied is %s\n",
                         satisfied);
     DPRINTF(Cache, "needsResponse is %s\n",
@@ -1495,9 +1496,9 @@ Cache<TagStore>::getTimingPacket()
     // use request from 1st target
     PacketPtr tgt_pkt = mshr->getTarget()->pkt;
 
-    DPRINTF(Cache, "[%s:%d] pkt: %p, tc: %p, pa: %#lx va: %#lx, TLBisExecute: %s\n",
+    DPRINTF(Cache, "[%s:%d] pkt: %p, tc: %p, pa: %#lx va: %#lx size: %d, TLBisExecute: %s\n",
     	__func__, __LINE__,
-    	tgt_pkt, tgt_pkt->tc, tgt_pkt->getPaddr(), tgt_pkt->getAddr(),
+    	tgt_pkt, tgt_pkt->tc, tgt_pkt->getPaddr(), tgt_pkt->getAddr(), tgt_pkt->getSize(),
 	tgt_pkt->TLBisExecute()? "true" : "false");
 
     if (tgt_pkt->cmd == MemCmd::SCUpgradeFailReq ||
@@ -1506,6 +1507,7 @@ Cache<TagStore>::getTimingPacket()
         // in MSHR, so now that we are getting around to processing
         // it, just treat it as if we got a failure response
         pkt = new Packet(tgt_pkt);
+	pkt->setSize(tgt_pkt->getSize());
 	pkt->tc = tgt_pkt->tc;
 	pkt->setAddr(tgt_pkt->getAddr());
 	pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
@@ -1533,6 +1535,7 @@ Cache<TagStore>::getTimingPacket()
             // check we could get a stale copy from memory  that might get used
             // in place of the dirty one.
             PacketPtr snoop_pkt = new Packet(tgt_pkt, true);
+	    snoop_pkt->setSize(tgt_pkt->getSize());
 	    snoop_pkt->tc = tgt_pkt->tc;
 	    snoop_pkt->setAddr(tgt_pkt->getAddr());
 	    snoop_pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
@@ -1552,6 +1555,7 @@ Cache<TagStore>::getTimingPacket()
 
         pkt = getBusPacket(tgt_pkt, blk, mshr->needsExclusive());
 	pkt->tc = tgt_pkt->tc;
+	pkt->setSize(tgt_pkt->getSize());
 	pkt->setAddr(tgt_pkt->getAddr());
 	pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
 
@@ -1563,6 +1567,7 @@ Cache<TagStore>::getTimingPacket()
             // copy for response handling
             pkt = new Packet(tgt_pkt);
 	    pkt->tc = tgt_pkt->tc;
+	    pkt->setSize(tgt_pkt->getSize());
 	    pkt->setAddr(tgt_pkt->getAddr());
 	    pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
             pkt->allocate();
@@ -1575,6 +1580,7 @@ Cache<TagStore>::getTimingPacket()
     assert(pkt != NULL);
     pkt->senderState = mshr;
     pkt->setAddr(tgt_pkt->getAddr());
+    pkt->setSize(tgt_pkt->getSize());
     pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
     return pkt;
 }
@@ -1650,7 +1656,7 @@ Cache<TagStore>::CpuSidePort::recvTimingReq(PacketPtr pkt)
     }
 
     cache->timingAccess(pkt);
-    DPRINTF(Cache, "CpuSidePort timing req\n");
+    DPRINTF(Cache, "CpuSidePort timing req, pkt: %p\n", pkt);
     DPRINTF(Cache, "recvTimingReq: Address is 0x%x\n",
             pkt->getAddr());
     return true;

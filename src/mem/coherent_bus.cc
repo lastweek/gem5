@@ -124,6 +124,8 @@ void CoherentBus::ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
     Process *p = tc->getProcessPtr();
     TlbEntry entry;
 
+    memset(&entry, 0, sizeof(entry));
+
     /* Maybe other faults */
     assert(p);
     if (!p->pTable)

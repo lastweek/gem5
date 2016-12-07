@@ -552,7 +552,14 @@ Fault
 LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
                     uint8_t *data, int load_idx)
 {
+    ThreadID tid = req->threadId();
+    ThreadContext *tc = cpu->thread[tid]->getTC();
     DynInstPtr load_inst = loadQueue[load_idx];
+
+    req->setPaddr(req->getVaddr());
+    req->isExecute = false;
+    printf("[%s:%s:%d] req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
+    	__FILE__,__func__,__LINE__,req->getVaddr(),req->getPaddr(),req->getSize());
 
     assert(load_inst);
 
@@ -588,9 +595,9 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
     int store_size = 0;
 
     DPRINTF(LSQUnit, "Read called, load idx: %i, store idx: %i, "
-            "storeHead: %i addr: %#x%s\n",
+            "storeHead: %i addr: %#x%s size:%d \n",
             load_idx, store_idx, storeHead, req->getPaddr(),
-            sreqLow ? " split" : "");
+            sreqLow ? " split" : "", req->getSize());
 
     if (req->isLLSC()) {
         assert(!sreqLow);
@@ -609,6 +616,9 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
         ThreadContext *thread = cpu->tcBase(lsqID);
         Cycles delay(0);
         PacketPtr data_pkt = new Packet(req, MemCmd::ReadReq);
+	data_pkt->setAddr(req->getVaddr());
+	data_pkt->setSize(req->getSize());
+	data_pkt->tc = tc;
 
         if (!TheISA::HasUnalignedMemAcc || !sreqLow) {
             data_pkt->dataStatic(load_inst->memData);
@@ -617,6 +627,14 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
             assert(sreqLow->isMmappedIpr() && sreqHigh->isMmappedIpr());
             PacketPtr fst_data_pkt = new Packet(sreqLow, MemCmd::ReadReq);
             PacketPtr snd_data_pkt = new Packet(sreqHigh, MemCmd::ReadReq);
+
+	    fst_data_pkt->setAddr(req->getVaddr());
+	    fst_data_pkt->setSize(req->getSize());
+	    fst_data_pkt->tc = tc;
+
+	    snd_data_pkt->setAddr(req->getVaddr());
+	    snd_data_pkt->setSize(req->getSize());
+	    snd_data_pkt->tc = tc;
 
             fst_data_pkt->dataStatic(load_inst->memData);
             snd_data_pkt->dataStatic(load_inst->memData + sreqLow->getSize());
@@ -690,7 +708,10 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
                     store_idx, req->getVaddr(), data);
 
             PacketPtr data_pkt = new Packet(req, MemCmd::ReadReq);
+	    data_pkt->setAddr(req->getVaddr());
             data_pkt->dataStatic(load_inst->memData);
+	    data_pkt->tc = tc;
+	    data_pkt->setSize(req->getSize());
 
             WritebackEvent *wb = new WritebackEvent(load_inst, data_pkt, this);
 
@@ -758,8 +779,8 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
     }
 
     // If there's no forwarding case, then go access memory
-    DPRINTF(LSQUnit, "Doing memory access for inst [sn:%lli] PC %s\n",
-            load_inst->seqNum, load_inst->pcState());
+    DPRINTF(LSQUnit, "Doing memory access for inst [sn:%lli] PC %s, req->vaddr=%#lx\n",
+            load_inst->seqNum, load_inst->pcState(), req->getVaddr());
 
     assert(!load_inst->memData);
     load_inst->memData = new uint8_t[64];
@@ -771,7 +792,12 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
     if (!lsq->cacheBlocked()) {
         MemCmd command =
             req->isLLSC() ? MemCmd::LoadLockedReq : MemCmd::ReadReq;
+
         PacketPtr data_pkt = new Packet(req, command);
+	data_pkt->setAddr(req->getVaddr());
+	data_pkt->tc = tc;
+	data_pkt->setSize(req->getSize());
+
         PacketPtr fst_data_pkt = NULL;
         PacketPtr snd_data_pkt = NULL;
 
@@ -792,6 +818,13 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
             // Create the split packets.
             fst_data_pkt = new Packet(sreqLow, command);
             snd_data_pkt = new Packet(sreqHigh, command);
+
+	    fst_data_pkt->tc = tc;
+	    snd_data_pkt->tc = tc;
+	    fst_data_pkt->setAddr(req->getVaddr());
+	    snd_data_pkt->setAddr(req->getVaddr());
+	    fst_data_pkt->setSize(req->getSize());
+	    snd_data_pkt->setSize(req->getSize());
 
             fst_data_pkt->dataStatic(load_inst->memData);
             snd_data_pkt->dataStatic(load_inst->memData + sreqLow->getSize());
@@ -889,6 +922,12 @@ Fault
 LSQUnit<Impl>::write(Request *req, Request *sreqLow, Request *sreqHigh,
                      uint8_t *data, int store_idx)
 {
+    req->setPaddr(req->getVaddr());
+    req->isExecute = false;
+    printf("[%s:%s:%d] req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
+    	__FILE__,__func__,__LINE__,req->getVaddr(),req->getPaddr(),req->getSize());
+
+
     assert(storeQueue[store_idx].inst);
 
     DPRINTF(LSQUnit, "Doing write to store idx %i, addr %#x data %#x"

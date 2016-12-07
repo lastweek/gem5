@@ -304,7 +304,7 @@ class Request
     void
     setPaddr(Addr paddr)
     {
-        assert(privateFlags.isSet(VALID_VADDR));
+        //assert(privateFlags.isSet(VALID_VADDR));
         _paddr = paddr;
         privateFlags.set(VALID_PADDR);
     }
@@ -387,7 +387,7 @@ class Request
     Addr
     getPaddr()
     {
-        assert(privateFlags.isSet(VALID_PADDR));
+        //assert(privateFlags.isSet(VALID_PADDR));
         return _paddr;
     }
 
@@ -445,7 +445,7 @@ class Request
     Addr
     getVaddr()
     {
-        assert(privateFlags.isSet(VALID_VADDR));
+        //assert(privateFlags.isSet(VALID_VADDR));
         return _vaddr;
     }
 
