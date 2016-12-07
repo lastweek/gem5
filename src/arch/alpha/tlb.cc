@@ -187,7 +187,9 @@ TLB::lookup(Addr vpn, uint8_t asn)
                 int index = i->second;
                 TlbEntry *entry = &table[index];
                 assert(entry->valid);
-                if (vpn == entry->tag && (entry->asma || entry->asn == asn)) {
+                //if (vpn == entry->tag && (entry->asma || entry->asn == asn)) {
+		DPRINTF(TLB, "Compare index=%d, vpn=%#x, tag=%#x\n", index, vpn, entry->tag);
+                if (vpn == entry->tag) {
                     retval = updateCache(entry);
                     break;
                 }

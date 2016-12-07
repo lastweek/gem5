@@ -67,6 +67,8 @@ CoherentBus::CoherentBus(const CoherentBusParams *p)
     */
    itb = p->itb;
    dtb = p->dtb;
+   printf("[%s:%s:%d] itb=%p dtb=%p\n",
+   	__FILE__,__func__,__LINE__, itb, dtb);
 
     // create the ports based on the size of the master and slave
     // vector ports, and the presence of the default port, the ports
@@ -139,8 +141,8 @@ void CoherentBus::ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
         VAddr vaddr(pkt->getAddr());
         itb->insert(vaddr.addr, entry);
 
-	DPRINTF(CoherentBus, "[%s:%d] setPaddr: %#lx\n",
-		__func__, __LINE__, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
+	DPRINTF(CoherentBus, "[%s:%d] itb: %p setPaddr: %#lx\n",
+		__func__, __LINE__, itb, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
 
         pkt->setPaddr((entry.ppn << PageShift) +
                       (vaddr.offset() & ~3));
@@ -172,8 +174,8 @@ void CoherentBus::NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
         VAddr vaddr(pkt->getAddr());
         dtb->insert(vaddr.addr, entry);
 
-	DPRINTF(CoherentBus, "[%s:%d] setPaddr: %#lx\n",
-		__func__, __LINE__, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
+	DPRINTF(CoherentBus, "[%s:%d] dtb:%p setPaddr: %#lx\n",
+		__func__, __LINE__, dtb, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
 
         pkt->setPaddr((entry.ppn << PageShift) +
                       (vaddr.offset() & ~3));
@@ -226,9 +228,6 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 
     DPRINTF(CoherentBus, "[%s:%d] After doTLBAccess, PA:%#lx\n",
     	__func__, __LINE__,pkt->getPaddr());
-
-    DPRINTF(CoherentBus, "Physical address is %x\n",
-                pkt->getPaddr());
 
     // determine the source port based on the id
     SlavePort *src_port = slavePorts[slave_port_id];

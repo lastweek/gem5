@@ -970,6 +970,8 @@ BaseDynInst<Impl>::writeMem(uint8_t *data, unsigned size,
      * Set req's PA to VA
      * Since we do not have TLB in CPU-side
      */
+    printf("req->vaddr=%#lx\n", req->getVaddr());
+    assert(req->getVaddr()>0x100);
     req->setPaddr(req->getVaddr());
 
     if (fault == NoFault && translationCompleted()) {
