@@ -513,6 +513,7 @@ if main['GCC']:
     main.Append(CCFLAGS=['-Wall', '-Wno-sign-compare', '-Wundef', '-Wno-error=maybe-uninitialized'])
     main.Append(CCFLAGS=['-Wno-error=format','-g'])
     main.Append(CCFLAGS=['-Wno-error=reorder'])
+    main.Append(CCFLAGS=['-O0'])
     # Read the GCC version to check for versions with bugs
     # Note CCVERSION doesn't work here because it is run with the CC
     # before we override it from the command line
