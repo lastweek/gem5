@@ -570,11 +570,8 @@ class Packet : public Printable
     /// Reset destination field, e.g. to turn a response into a request again.
     void clearDest() { dest = InvalidPortID; }
 
-    //Addr getAddr() const { assert(flags.isSet(VALID_ADDR)); return addr; }
-    //Addr getPaddr() const { assert(flags.isSet(VALID_ADDR)); return paddr; }//memory physical address//smile
-    Addr getAddr() const { return addr; }
-    Addr getPaddr() const { return paddr; }//memory physical address//smile
-
+    Addr getAddr() const { assert(flags.isSet(VALID_ADDR)); return addr; }
+    Addr getPaddr() const { assert(flags.isSet(VALID_ADDR)); return paddr; }//memory physical address//smile
     /**
      * Update the address of this packet mid-transaction. This is used
      * by the address mapper to change an already set address to a new
@@ -582,12 +579,9 @@ class Packet : public Printable
      * an existing address, so it asserts that the current address is
      * valid.
      */
-    //void setAddr(Addr _addr) { assert(flags.isSet(VALID_ADDR)); addr = _addr; }
-    void setAddr(Addr _addr) { addr = _addr; }
-
+    void setAddr(Addr _addr) { assert(flags.isSet(VALID_ADDR)); addr = _addr; }
     //for memory-side TLB//smile
-    void setPaddr(Addr _paddr) { paddr = _paddr; }
-
+    void setPaddr(Addr _paddr) { assert(flags.isSet(VALID_ADDR)); paddr = _paddr; }
     uint64_t getRegTLB_icm() { return reg_ipr_icm; }
     uint64_t getRegTLB_dtb_asn() { return reg_ipr_dtb_asn; }
     uint64_t getRegTLB_dtb_cm() { return reg_ipr_dtb_cm; }
@@ -595,7 +589,7 @@ class Packet : public Printable
     bool TLBisExecute() const { return _TLBisExecute; }
     bool TLBisWrite() const { return _TLBisWrite; }
 
-    unsigned getSize() const  { return size; }
+    unsigned getSize() const  { assert(flags.isSet(VALID_SIZE)); return size; }
     Addr getOffset(int blkSize) const { return getAddr() & (Addr)(blkSize - 1); }
 
     /**
@@ -633,8 +627,6 @@ class Packet : public Printable
            bytesValidStart(0), bytesValidEnd(0),
            time(curTick()), senderState(NULL)
     {
-	/* Save the vaddress from the request */
-        addr = req->getVaddr();
         paddr = 0;
 	tc = NULL;
         reg_ipr_icm = req->getRegTLB_icm();
@@ -651,7 +643,6 @@ class Packet : public Printable
             size = req->getSize();
             flags.set(VALID_SIZE);
         }
-	size = req->getSize();
     }
 
     /**
@@ -665,8 +656,6 @@ class Packet : public Printable
            bytesValidStart(0), bytesValidEnd(0),
            time(curTick()), senderState(NULL)
     {
-	/* Save the vaddress from the request */
-        addr = req->getVaddr();
         paddr = 0;
 	tc = NULL;
         reg_ipr_icm = req->getRegTLB_icm();
@@ -679,7 +668,7 @@ class Packet : public Printable
             addr = req->getPaddr() & ~(_blkSize - 1);
             flags.set(VALID_ADDR);
         }
-        size = req->getSize();
+        size = _blkSize;
         flags.set(VALID_SIZE);
     }
 
@@ -698,16 +687,13 @@ class Packet : public Printable
            bytesValidStart(pkt->bytesValidStart), bytesValidEnd(pkt->bytesValidEnd),
            time(curTick()), senderState(pkt->senderState)
     {
-        size = pkt->getSize();
-        _TLBisExecute = pkt->_TLBisExecute;
         paddr = 0;
         if (!clearFlags)
             flags.set(pkt->flags & COPY_FLAGS);
 
         flags.set(pkt->flags & (VALID_ADDR|VALID_SIZE));
         flags.set(pkt->flags & STATIC_DATA);
-        _TLBisExecute = pkt->_TLBisExecute;
-	_TLBisWrite = pkt->_TLBisWrite;
+
     }
 
     /**
