@@ -43,12 +43,12 @@ from m5.objects import *
 
 m5.util.addToPath('../common')
 
-bench_dir='/home/ys/SPEC2006/'
+bench_dir='/home/ys/SPEC_2006/'
 
 ### Note: That some benchmarks require this variable to be modified to match
 ### your home environment. This variable only applies for certain benchmarks
 ### that require read/write to an output directory
-output_dir= '/home/ys/SPEC2006/outputs/spec2k6/'
+output_dir= '/home/ys/SPEC_2006/outputs/spec2k6/'
 
 #400.perlbench
 perlbench = LiveProcess()
@@ -185,7 +185,7 @@ calculix.output = 'beampic.log'
 
 #456.hmmer
 hmmer=LiveProcess()
-hmmr_dir = '456.hmmr/'
+hmmr_dir = '456.hmmer/'
 hmmer.executable = bench_dir+hmmr_dir+'/exe/hmmer'
 data=bench_dir+hmmr_dir+'/data/ref/input/nph3.hmm'
 hmmer.cmd = [hmmer.executable]+['--fixed', '0', '--mean', '325', '--num', '5000', '--sd', '200', '--seed', '0', data]
@@ -216,7 +216,7 @@ libquantum.output = 'ref.out'
 #464.h264ref
 h264ref=LiveProcess()
 h264_dir = '464.h264ref/'
-h264ref.executable = bench_dir+h264_dir+'/exe/h264'
+h264ref.executable = bench_dir+h264_dir+'/exe/h264ref'
 data=bench_dir+h264_dir+'/data/ref/input/foreman_ref_encoder_baseline.cfg'
 h264ref.cmd = [h264ref.executable]+['-d',data]
 h264ref.output = 'foreman_ref_encoder_baseline.out'

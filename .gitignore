@@ -38,3 +38,4 @@ tests/
 parsetab.py
 
 spec2006/
+build_default_inorder/

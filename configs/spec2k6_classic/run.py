@@ -161,7 +161,7 @@ multiprocesses.append(process)
 
 np = options.num_cpus
 system = System(cpu = [CPUClass(cpu_id=i) for i in xrange(np)],
-                physmem = SimpleMemory(range=AddrRange("1024MB")),
+                physmem = SimpleMemory(range=AddrRange("512MB")),
                 membus = CoherentBus(), mem_mode = test_mem_mode)
 
 
@@ -248,10 +248,8 @@ else:
         system.cpu[i].createInterruptController()
 
     system.system_port = system.membus.slave
-
     system.physmem.port = system.membus.master
     system.physmem.latency = options.memlatency
-    
-    #CacheConfig.config_cache(options, system)
+
 root = Root(full_system = False, system = system)
 Simulation.run(options, root, system, FutureClass)

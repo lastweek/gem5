@@ -68,7 +68,7 @@ class L2Cache(BaseCache):
         self.mem_side = bus.slave
 
 class L3Cache(BaseCache):
-    size = '4MB'
+    size = '8MB'
     assoc = 8
     block_size = 64
     hit_latency = '20ns'
@@ -77,7 +77,7 @@ class L3Cache(BaseCache):
     tgts_per_mshr = 12
 
 class L4Cache(BaseCache):
-    size = '64MB'
+    size = '128MB'
     assoc = 8
     block_size = 64
     hit_latency = '50ns'
