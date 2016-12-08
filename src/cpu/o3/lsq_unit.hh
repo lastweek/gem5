@@ -558,6 +558,7 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
 
     req->setPaddr(req->getVaddr());
     req->isExecute = false;
+
     printf("[%s:%s:%d] req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
     	__FILE__,__func__,__LINE__,req->getVaddr(),req->getPaddr(),req->getSize());
 
@@ -616,9 +617,9 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
         ThreadContext *thread = cpu->tcBase(lsqID);
         Cycles delay(0);
         PacketPtr data_pkt = new Packet(req, MemCmd::ReadReq);
-	data_pkt->setAddr(req->getVaddr());
-	data_pkt->setSize(req->getSize());
-	data_pkt->tc = tc;
+	//data_pkt->setAddr(req->getVaddr());
+	//data_pkt->setSize(req->getSize());
+	//data_pkt->tc = tc;
 
         if (!TheISA::HasUnalignedMemAcc || !sreqLow) {
             data_pkt->dataStatic(load_inst->memData);
@@ -627,14 +628,6 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
             assert(sreqLow->isMmappedIpr() && sreqHigh->isMmappedIpr());
             PacketPtr fst_data_pkt = new Packet(sreqLow, MemCmd::ReadReq);
             PacketPtr snd_data_pkt = new Packet(sreqHigh, MemCmd::ReadReq);
-
-	    fst_data_pkt->setAddr(req->getVaddr());
-	    fst_data_pkt->setSize(req->getSize());
-	    fst_data_pkt->tc = tc;
-
-	    snd_data_pkt->setAddr(req->getVaddr());
-	    snd_data_pkt->setSize(req->getSize());
-	    snd_data_pkt->tc = tc;
 
             fst_data_pkt->dataStatic(load_inst->memData);
             snd_data_pkt->dataStatic(load_inst->memData + sreqLow->getSize());
@@ -708,10 +701,10 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
                     store_idx, req->getVaddr(), data);
 
             PacketPtr data_pkt = new Packet(req, MemCmd::ReadReq);
-	    data_pkt->setAddr(req->getVaddr());
             data_pkt->dataStatic(load_inst->memData);
-	    data_pkt->tc = tc;
-	    data_pkt->setSize(req->getSize());
+	   // data_pkt->setAddr(req->getVaddr());
+	   // data_pkt->tc = tc;
+	   // data_pkt->setSize(req->getSize());
 
             WritebackEvent *wb = new WritebackEvent(load_inst, data_pkt, this);
 
@@ -794,9 +787,9 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
             req->isLLSC() ? MemCmd::LoadLockedReq : MemCmd::ReadReq;
 
         PacketPtr data_pkt = new Packet(req, command);
-	data_pkt->setAddr(req->getVaddr());
+	//data_pkt->setAddr(req->getVaddr());
 	data_pkt->tc = tc;
-	data_pkt->setSize(req->getSize());
+	//data_pkt->setSize(req->getSize());
 
         PacketPtr fst_data_pkt = NULL;
         PacketPtr snd_data_pkt = NULL;
@@ -818,13 +811,6 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
             // Create the split packets.
             fst_data_pkt = new Packet(sreqLow, command);
             snd_data_pkt = new Packet(sreqHigh, command);
-
-	    fst_data_pkt->tc = tc;
-	    snd_data_pkt->tc = tc;
-	    fst_data_pkt->setAddr(req->getVaddr());
-	    snd_data_pkt->setAddr(req->getVaddr());
-	    fst_data_pkt->setSize(req->getSize());
-	    snd_data_pkt->setSize(req->getSize());
 
             fst_data_pkt->dataStatic(load_inst->memData);
             snd_data_pkt->dataStatic(load_inst->memData + sreqLow->getSize());

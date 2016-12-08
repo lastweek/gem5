@@ -570,8 +570,8 @@ class Packet : public Printable
     /// Reset destination field, e.g. to turn a response into a request again.
     void clearDest() { dest = InvalidPortID; }
 
-    Addr getAddr() const { assert(flags.isSet(VALID_ADDR)); return addr; }
-    Addr getPaddr() const { assert(flags.isSet(VALID_ADDR)); return paddr; }//memory physical address//smile
+    Addr getAddr() const {  return addr; }
+    Addr getPaddr() const { return paddr; }//memory physical address//smile
     /**
      * Update the address of this packet mid-transaction. This is used
      * by the address mapper to change an already set address to a new
@@ -579,9 +579,9 @@ class Packet : public Printable
      * an existing address, so it asserts that the current address is
      * valid.
      */
-    void setAddr(Addr _addr) { assert(flags.isSet(VALID_ADDR)); addr = _addr; }
+    void setAddr(Addr _addr) {  addr = _addr; }
     //for memory-side TLB//smile
-    void setPaddr(Addr _paddr) { assert(flags.isSet(VALID_ADDR)); paddr = _paddr; }
+    void setPaddr(Addr _paddr) { paddr = _paddr; }
     uint64_t getRegTLB_icm() { return reg_ipr_icm; }
     uint64_t getRegTLB_dtb_asn() { return reg_ipr_dtb_asn; }
     uint64_t getRegTLB_dtb_cm() { return reg_ipr_dtb_cm; }

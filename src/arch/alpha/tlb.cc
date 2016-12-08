@@ -187,7 +187,8 @@ TLB::lookup(Addr vpn, uint8_t asn)
                 int index = i->second;
                 TlbEntry *entry = &table[index];
                 assert(entry->valid);
-                if (vpn == entry->tag && (entry->asma || entry->asn == asn)) {
+                //if (vpn == entry->tag && (entry->asma || entry->asn == asn)) {
+                if (vpn == entry->tag ) {
                     retval = updateCache(entry);
                     break;
                 }
@@ -820,15 +821,15 @@ TLB::translateTiming(RequestPtr req, ThreadContext *tc,
      * Workaround for the first instruction
      * the nextPC was set properly by default
      */
-    if (req->getVaddr() == 0) {
+    if (req->getVaddr() < 0x50) {
         printf("[%s:%s():%d] Get req->getVaddr = 0, isExecute=%s \n",
 		__FILE__,__func__, __LINE__, req->isExecute ? "true" : "false");
 
-       //if (req->isExecute) {
-       //    fault = new ItbPageFault(req->getVaddr());
-       //} else {
-           uint64_t flags = req->isWrite? MM_STAT_WR_MASK : 0;
-           fault = new DtbPageFault(req->getVaddr(), req->getFlags(), flags);
+      // if (req->isExecute) {
+           fault = new ItbPageFault(req->getVaddr());
+      // } else {
+      //     uint64_t flags = req->isWrite? MM_STAT_WR_MASK : 0;
+      //     fault = new DtbPageFault(req->getVaddr(), req->getFlags(), flags);
        //}
     } else {
         /*
@@ -836,6 +837,7 @@ TLB::translateTiming(RequestPtr req, ThreadContext *tc,
 	 * Always return NoFault, to the finish() can access cache directly
 	 */
         fault = NoFault;
+	req->setPaddr(req->getVaddr());
     }
 
     translation->finish(fault, req, tc, mode);

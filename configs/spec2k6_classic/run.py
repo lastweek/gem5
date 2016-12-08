@@ -39,6 +39,8 @@ from m5.defines import buildEnv
 from m5.objects import *
 from m5.params import *
 from m5.util import addToPath, fatal
+from m5.objects import *
+
 
 addToPath('../common')
 addToPath('../ruby')
@@ -159,7 +161,7 @@ multiprocesses.append(process)
 
 np = options.num_cpus
 system = System(cpu = [CPUClass(cpu_id=i) for i in xrange(np)],
-                physmem = SimpleMemory(range=AddrRange("512MB")),
+                physmem = SimpleMemory(range=AddrRange("1024MB")),
                 membus = CoherentBus(), mem_mode = test_mem_mode)
 
 
@@ -193,13 +195,58 @@ if options.ruby:
             system.cpu[i].dtb.walker.port = ruby_port.slave
 else:
     for i in xrange(np):
+	#
+	# Create L1 Cache
+	#
         system.cpu[i].icache = L1ICache()
         system.cpu[i].dcache = L1DCache()
+
+	# Link L1 Cache to CPU
         system.cpu[i].icache.cpu_side = system.cpu[i].icache_port
-        system.cpu[i].icache.mem_side = system.membus.slave
         system.cpu[i].dcache.cpu_side = system.cpu[i].dcache_port
-        system.cpu[i].dcache.mem_side = system.membus.slave
+
+	# Create L2 coherent crossbar
+        system.cpu[i].l2bus = CoherentBus(CacheBus=True)
+
+	# Link L1 Cache to L2 XBus
+        system.cpu[i].icache.mem_side = system.cpu[i].l2bus.slave
+        system.cpu[i].dcache.mem_side = system.cpu[i].l2bus.slave
+
+	#
+	# Create L2 Cache and connect it to the l2bus
+	#
+	system.cpu[i].l2cache = L2Cache()
+	system.cpu[i].l2cache.cpu_side = system.cpu[i].l2bus.master
+
+	# Create L3 Cache coherent crossbar
+	system.cpu[i].l3bus = CoherentBus(CacheBus=True)
+
+	# Link L2 Cache to L3 XBus
+	system.cpu[i].l2cache.mem_side = system.cpu[i].l3bus.slave
+
+	#
+	# Creat L3 Cache and connect it to the l3bus
+	#
+	system.cpu[i].l3cache = L3Cache()
+	system.cpu[i].l3cache.cpu_side = system.cpu[i].l3bus.master
+
+	# Create L4 Cache coherent corssbar
+	system.cpu[i].l4bus = CoherentBus(CacheBus=True)
+
+	# Link L3 Cache to L4 XBus
+	system.cpu[i].l3cache.mem_side = system.cpu[i].l4bus.slave
+
+	#
+	# Create L4 Cache and connect it to the l4bus
+	#
+	system.cpu[i].l4cache = L4Cache()
+	system.cpu[i].l4cache.cpu_side = system.cpu[i].l4bus.master
+
+	# Connect LLC to memory bus
+	system.cpu[i].l4cache.mem_side = system.membus.slave
+
         system.cpu[i].createInterruptController()
+
     system.system_port = system.membus.slave
 
     system.physmem.port = system.membus.master

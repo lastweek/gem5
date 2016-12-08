@@ -78,8 +78,8 @@ LRU::LRU(unsigned _numSets, unsigned _blkSize, unsigned _assoc,
     numBlocks = numSets * assoc;
     dataBlks = new uint8_t[numBlocks * blkSize];
 
-    printf("[%s:%s:%d] blkSize=%d numSets=%d assoc=%d hitLatency=%d\n",
-    	__FILE__, __func__, __LINE__, blkSize, numSets, assoc, hitLatency);
+    printf("[%s():%d] blkSize=%d numSets=%d assoc=%d hitLatency=%d\n",
+    	__func__, __LINE__, blkSize, numSets, assoc, hitLatency);
 
     unsigned blkIndex = 0;       // index into blks array
     for (unsigned i = 0; i < numSets; ++i) {

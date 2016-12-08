@@ -825,26 +825,16 @@ LSQUnit<Impl>::writebackStores()
 
             // Build a single data packet if the store isn't split.
             data_pkt = new Packet(req, command);
-	    data_pkt->setSize(req->getSize());
+	    //data_pkt->setSize(req->getSize());
 	    data_pkt->tc = tc;
 	    data_pkt->_TLBisExecute = false;
-	    data_pkt->setAddr(req->getVaddr());
+	    //data_pkt->setAddr(req->getVaddr());
             data_pkt->dataStatic(inst->memData);
             data_pkt->senderState = state;
         } else {
             // Create two packets if the store is split in two.
             data_pkt = new Packet(sreqLow, command);
             snd_data_pkt = new Packet(sreqHigh, command);
-
-	    data_pkt->setSize(req->getSize());
-	    data_pkt->tc = tc;
-	    data_pkt->_TLBisExecute = false;
-	    data_pkt->setAddr(req->getVaddr());
-
-	    snd_data_pkt->tc = tc;
-	    snd_data_pkt->_TLBisExecute = false;
-	    snd_data_pkt->setAddr(req->getVaddr());
-	    snd_data_pkt->setSize(req->getSize());
 
             data_pkt->dataStatic(inst->memData);
             snd_data_pkt->dataStatic(inst->memData + sreqLow->getSize());

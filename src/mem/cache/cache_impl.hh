@@ -1495,8 +1495,12 @@ Cache<TagStore>::getTimingPacket()
     // use request from 1st target
     PacketPtr tgt_pkt = mshr->getTarget()->pkt;
 
-    PR("[%s:%d] pkt: %p, tc: %p, pa: %#lx va: %#lx\n", __func__, __LINE__,
-    	tgt_pkt, tgt_pkt->tc, tgt_pkt->getPaddr(), tgt_pkt->getAddr());
+    DPRINTF(Cache, "[%s:%d] pkt: %p, tc: %p, pa: %#lx va: %#lx size: %d, TLBisExecute: %s\n",
+       __func__, __LINE__,
+       tgt_pkt, tgt_pkt->tc, tgt_pkt->getPaddr(), tgt_pkt->getAddr(), tgt_pkt->getSize(),
+       tgt_pkt->TLBisExecute()? "true" : "false");
+
+    assert(tgt_pkt->getAddr());
 
     if (tgt_pkt->cmd == MemCmd::SCUpgradeFailReq ||
         tgt_pkt->cmd == MemCmd::StoreCondFailReq) {
@@ -1505,6 +1509,7 @@ Cache<TagStore>::getTimingPacket()
         // it, just treat it as if we got a failure response
         pkt = new Packet(tgt_pkt);
 	pkt->tc = tgt_pkt->tc;
+	pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
         pkt->cmd = MemCmd::UpgradeFailResp;
         pkt->senderState = mshr;
         pkt->firstWordTime = pkt->finishTime = curTick();
@@ -1530,6 +1535,7 @@ Cache<TagStore>::getTimingPacket()
             // in place of the dirty one.
             PacketPtr snoop_pkt = new Packet(tgt_pkt, true);
 	    snoop_pkt->tc = tgt_pkt->tc;
+	    snoop_pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
             snoop_pkt->setExpressSnoop();
             snoop_pkt->senderState = mshr;
             cpuSidePort->sendTimingSnoopReq(snoop_pkt);
@@ -1546,6 +1552,7 @@ Cache<TagStore>::getTimingPacket()
 
         pkt = getBusPacket(tgt_pkt, blk, mshr->needsExclusive());
 	pkt->tc = tgt_pkt->tc;
+	pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
 
         mshr->isForward = (pkt == NULL);
 
@@ -1555,6 +1562,7 @@ Cache<TagStore>::getTimingPacket()
             // copy for response handling
             pkt = new Packet(tgt_pkt);
 	    pkt->tc = tgt_pkt->tc;
+	    pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
             pkt->allocate();
             if (pkt->isWrite()) {
                 pkt->setData(tgt_pkt->getPtr<uint8_t>());
@@ -1564,6 +1572,7 @@ Cache<TagStore>::getTimingPacket()
 
     assert(pkt != NULL);
     pkt->senderState = mshr;
+    pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
     return pkt;
 }
 

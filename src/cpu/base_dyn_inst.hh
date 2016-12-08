@@ -890,12 +890,6 @@ BaseDynInst<Impl>::readMem(Addr addr, uint8_t *data,
         initiateTranslation(req, sreqLow, sreqHigh, NULL, BaseTLB::Read);
     }
 
-    /*
-     * Set req's PA to VA
-     * Since we do not have TLB in CPU-side
-     */
-    req->setPaddr(req->getVaddr());
-
     if (translationCompleted()) {
         if (fault == NoFault) {
 	    printf("[%s:%s():%d] NoFault, req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
@@ -964,12 +958,6 @@ BaseDynInst<Impl>::writeMem(uint8_t *data, unsigned size,
         }
         initiateTranslation(req, sreqLow, sreqHigh, res, BaseTLB::Write);
     }
-
-    /*
-     * Set req's PA to VA
-     * Since we do not have TLB in CPU-side
-     */
-    req->setPaddr(req->getVaddr());
 
     if (fault == NoFault && translationCompleted()) {
  	 printf("[%s:%s:%d] NoFault, req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",

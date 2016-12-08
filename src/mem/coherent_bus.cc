@@ -65,10 +65,12 @@ CoherentBus::CoherentBus(const CoherentBusParams *p)
    /*
     * Memory-Side TLB
     */
+   CacheBus = p->CacheBus;
    itb = p->itb;
    dtb = p->dtb;
-   printf("[%s:%s:%d] itb=%p dtb=%p\n",
-   	__FILE__,__func__,__LINE__, itb, dtb);
+
+   printf("[%s:%s:%d] itb=%p dtb=%p CacheBus=%s \n",
+   	__FILE__,__func__,__LINE__, itb, dtb, CacheBus?"true":"false");
 
     // create the ports based on the size of the master and slave
     // vector ports, and the presence of the default port, the ports
@@ -126,8 +128,6 @@ void CoherentBus::ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
     Process *p = tc->getProcessPtr();
     TlbEntry entry;
 
-    memset(&entry, 0, sizeof(entry));
-
     /* Maybe other faults */
     assert(p);
     if (!p->pTable)
@@ -156,8 +156,6 @@ void CoherentBus::NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
     VAddr vaddr = VAddr(pkt->getAddr());
     Process *p = tc->getProcessPtr();
     TlbEntry entry;
-
-    memset(&entry, 0, sizeof(entry));
 
     /* Maybe other faults */
     assert(p);
@@ -209,6 +207,15 @@ static ThreadContext *saved_tc;
 bool
 CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 {
+
+  /*
+   * Do nothing if it is a cross-cache bar, since all caches
+   * are virtual cache.
+   *
+   * Otherwise it is a membus that connects to physical memory,
+   * then we need to go through TLB
+   */
+  if (!CacheBus) {
     if (pkt->tc) {
         DPRINTF(CoherentBus, "[%s:%d] Need to do TLB access, tc=%p, VA: %#lx\n",
 		__func__, __LINE__, pkt->tc, pkt->getAddr());
@@ -227,9 +234,9 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 	pkt->tc = saved_tc;
 	doTLBAccess(pkt);
     }
-
     DPRINTF(CoherentBus, "[%s:%d] After doTLBAccess, PA:%#lx\n",
     	__func__, __LINE__,pkt->getPaddr());
+ }
 
     // determine the source port based on the id
     SlavePort *src_port = slavePorts[slave_port_id];
@@ -280,7 +287,11 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
 
     // since it is a normal request, determine the destination
     // based on the address and attempt to send the packet
-    bool success = masterPorts[findPort(pkt->getPaddr())]->sendTimingReq(pkt);
+    bool success;
+    if (CacheBus)
+        success = masterPorts[findPort(pkt->getAddr())]->sendTimingReq(pkt);
+    else
+        success = masterPorts[findPort(pkt->getPaddr())]->sendTimingReq(pkt);
 
     // if this is an express snoop, we are done at this point
     if (is_express_snoop) {

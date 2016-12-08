@@ -31,7 +31,7 @@ from m5.objects import *
 class L1Cache(BaseCache):
     assoc = 2
     block_size = 64
-    hit_latency = '1ns'
+    hit_latency = '3ns'
     response_latency = '1ns'
     mshrs = 10
     tgts_per_mshr = 20
@@ -41,24 +41,50 @@ class L1Cache(BaseCache):
         self.mem_side = bus.slave
 
 class L1ICache(L1Cache):
-    size = '16kB'
+    size = '32kB'
 
     def connectCPU(self, cpu):
         self.cpu_side = cpu.icache_port
 
 class L1DCache(L1Cache):
-    size = '64kB'
+    size = '32kB'
 
     def connectCPU(self, cpu):
         self.cpu_side = cpu.dcache_port
 
-#class L2Cache(BaseCache):
-#    assoc = 8
-#    block_size = 64
-#    hit_latency = '10ns'
-#    response_latency = '10ns'
-#    mshrs = 20
-#    tgts_per_mshr = 12
+class L2Cache(BaseCache):
+    size = '256kB'
+    assoc = 8
+    block_size = 64
+    hit_latency = '12ns'
+    response_latency = '12ns'
+    mshrs = 20
+    tgts_per_mshr = 12
+
+    def connectCPUSideBus(self, bus):
+        self.cpu_side = bus.master
+
+    def connectMemSideBus(self, bus):
+        self.mem_side = bus.slave
+
+class L3Cache(BaseCache):
+    size = '4MB'
+    assoc = 8
+    block_size = 64
+    hit_latency = '20ns'
+    response_latency = '20ns'
+    mshrs = 64
+    tgts_per_mshr = 12
+
+class L4Cache(BaseCache):
+    size = '64MB'
+    assoc = 8
+    block_size = 64
+    hit_latency = '50ns'
+    response_latency = '50ns'
+    mshrs = 64
+    tgts_per_mshr = 12
+
 
 #class PageTableWalkerCache(BaseCache):
 #    assoc = 2

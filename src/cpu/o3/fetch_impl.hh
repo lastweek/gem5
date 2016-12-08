@@ -622,7 +622,7 @@ DefaultFetch<Impl>::finishTranslation(Fault fault, RequestPtr mem_req)
 
 	data_pkt->tc = cpu->thread[tid]->getTC();
 	data_pkt->setAddr(mem_req->getVaddr());
-	data_pkt->setPaddr(0);
+	data_pkt->setPaddr(mem_req->getVaddr());
 	data_pkt->_TLBisExecute = true;
 
         assert(data_pkt->tc);

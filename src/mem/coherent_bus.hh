@@ -90,6 +90,8 @@ class CoherentBus : public BaseBus
     TheISA::TLB *itb;
     TheISA::TLB *dtb;
 
+    bool CacheBus;
+
   protected:
 
     /**

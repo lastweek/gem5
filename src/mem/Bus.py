@@ -86,3 +86,4 @@ class NoncoherentBus(BaseBus):
 
 class CoherentBus(BaseBus):
     type = 'CoherentBus'
+    CacheBus = Param.Bool(False, "This bus is used as cross-cache bar")
