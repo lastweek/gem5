@@ -157,6 +157,8 @@ void CoherentBus::NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
     Process *p = tc->getProcessPtr();
     TlbEntry entry;
 
+    memset(&entry, 0, sizeof(entry));
+
     /* Maybe other faults */
     assert(p);
     if (!p->pTable)
@@ -175,10 +177,10 @@ void CoherentBus::NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
         dtb->insert(vaddr.addr, entry);
 
 	DPRINTF(CoherentBus, "[%s:%d] dtb:%p setPaddr: %#lx\n",
-		__func__, __LINE__, dtb, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
+		__func__, __LINE__, dtb, (entry.ppn << PageShift) +(vaddr.offset()));
 
         pkt->setPaddr((entry.ppn << PageShift) +
-                      (vaddr.offset() & ~3));
+                      (vaddr.offset()));
     }
 }
 

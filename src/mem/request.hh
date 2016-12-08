@@ -206,7 +206,9 @@ class Request
      *  default constructor.)
      */
     Request()
-    {}
+    {
+      isExecute = false;
+    }
 
     /**
      * Constructor for physical (e.g. device) requests.  Initializes
@@ -216,11 +218,13 @@ class Request
     Request(Addr paddr, int size, Flags flags, MasterID mid)
     {
         setPhys(paddr, size, flags, mid);
+	isExecute = false;
     }
 
     Request(Addr paddr, int size, Flags flags, MasterID mid, Tick time)
     {
         setPhys(paddr, size, flags, mid, time);
+	isExecute = false;
     }
 
     Request(Addr paddr, int size, Flags flags, MasterID mid, Tick time, Addr pc)
@@ -228,6 +232,7 @@ class Request
         setPhys(paddr, size, flags, mid, time);
         privateFlags.set(VALID_PC);
         _pc = pc;
+	isExecute = false;
     }
 
     Request(int asid, Addr vaddr, int size, Flags flags, MasterID mid, Addr pc,
@@ -235,6 +240,7 @@ class Request
     {
         setVirt(asid, vaddr, size, flags, mid, pc);
         setThreadContext(cid, tid);
+	isExecute = false;
     }
 
     ~Request() {}

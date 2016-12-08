@@ -898,7 +898,7 @@ BaseDynInst<Impl>::readMem(Addr addr, uint8_t *data,
 
     if (translationCompleted()) {
         if (fault == NoFault) {
-	    printf("[%s:%s:%d] NoFault, req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",
+	    printf("[%s:%s():%d] NoFault, req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
 	    	__FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
 
             effAddr = req->getVaddr();
@@ -913,9 +913,8 @@ BaseDynInst<Impl>::readMem(Addr addr, uint8_t *data,
             }
             fault = cpu->read(req, sreqLow, sreqHigh, data, lqIdx);
         } else {
-	    printf("[%s:%s:%d] Fault!! req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",
+	    printf("[%s:%s():%d] Fault!! req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
 	    	__FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
-
 
             // Commit will have to clean up whatever happened.  Set this
             // instruction as executed.
@@ -970,8 +969,6 @@ BaseDynInst<Impl>::writeMem(uint8_t *data, unsigned size,
      * Set req's PA to VA
      * Since we do not have TLB in CPU-side
      */
-    printf("req->vaddr=%#lx\n", req->getVaddr());
-    assert(req->getVaddr()>0x100);
     req->setPaddr(req->getVaddr());
 
     if (fault == NoFault && translationCompleted()) {

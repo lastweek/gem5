@@ -823,11 +823,15 @@ TLB::translateTiming(RequestPtr req, ThreadContext *tc,
      * the nextPC was set properly by default
      */
     if (req->getVaddr() == 0) {
-        printf("[%s:%d] Get req->getVaddr = 0",
-		__func__, __LINE__);
-	
-       fault = new ItbPageFault(req->getVaddr());
-       //fault = new DtbPageFault(req->getVaddr());
+        printf("[%s:%s():%d] Get req->getVaddr = 0, isExecute=%s \n",
+		__FILE__,__func__, __LINE__, req->isExecute ? "true" : "false");
+
+       //if (req->isExecute) {
+       //    fault = new ItbPageFault(req->getVaddr());
+       //} else {
+           uint64_t flags = req->isWrite? MM_STAT_WR_MASK : 0;
+           fault = new DtbPageFault(req->getVaddr(), req->getFlags(), flags);
+       //}
     } else {
         /*
 	 * NO TLB in CPU-side
