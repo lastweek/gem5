@@ -1,0 +1,2433 @@
+diff --git a/SConstruct b/SConstruct
+index 842c4fe..04ee61f 100755
+--- a/SConstruct
++++ b/SConstruct
+@@ -510,7 +510,10 @@ if main['GCC'] + main['SUNCC'] + main['ICC'] + main['CLANG'] > 1:
+ if main['GCC']:
+     main.Append(CCFLAGS=['-pipe'])
+     main.Append(CCFLAGS=['-fno-strict-aliasing'])
+-    main.Append(CCFLAGS=['-Wall', '-Wno-sign-compare', '-Wundef'])
++    main.Append(CCFLAGS=['-Wall', '-Wno-sign-compare', '-Wundef', '-Wno-error=maybe-uninitialized'])
++    main.Append(CCFLAGS=['-Wno-error=format','-g'])
++    main.Append(CCFLAGS=['-Wno-error=reorder'])
++    main.Append(CCFLAGS=['-O0'])
+     # Read the GCC version to check for versions with bugs
+     # Note CCVERSION doesn't work here because it is run with the CC
+     # before we override it from the command line
+diff --git a/configs/spec2k6_classic/Caches.py b/configs/spec2k6_classic/Caches.py
+new file mode 100644
+index 0000000..8421cd3
+--- /dev/null
++++ b/configs/spec2k6_classic/Caches.py
+@@ -0,0 +1,108 @@
++# Copyright (c) 2006-2007 The Regents of The University of Michigan
++# All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are
++# met: redistributions of source code must retain the above copyright
++# notice, this list of conditions and the following disclaimer;
++# redistributions in binary form must reproduce the above copyright
++# notice, this list of conditions and the following disclaimer in the
++# documentation and/or other materials provided with the distribution;
++# neither the name of the copyright holders nor the names of its
++# contributors may be used to endorse or promote products derived from
++# this software without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++# Authors: Lisa Hsu
++
++from m5.objects import *
++
++class L1Cache(BaseCache):
++    assoc = 2
++    block_size = 64
++    hit_latency = '3ns'
++    response_latency = '1ns'
++    mshrs = 10
++    tgts_per_mshr = 20
++    is_top_level = True
++
++    def connectCPU(self, bus):
++        self.mem_side = bus.slave
++
++class L1ICache(L1Cache):
++    size = '32kB'
++
++    def connectCPU(self, cpu):
++        self.cpu_side = cpu.icache_port
++
++class L1DCache(L1Cache):
++    size = '32kB'
++
++    def connectCPU(self, cpu):
++        self.cpu_side = cpu.dcache_port
++
++class L2Cache(BaseCache):
++    size = '256kB'
++    assoc = 8
++    block_size = 64
++    hit_latency = '12ns'
++    response_latency = '12ns'
++    mshrs = 20
++    tgts_per_mshr = 12
++
++    def connectCPUSideBus(self, bus):
++        self.cpu_side = bus.master
++
++    def connectMemSideBus(self, bus):
++        self.mem_side = bus.slave
++
++class L3Cache(BaseCache):
++    size = '8MB'
++    assoc = 8
++    block_size = 64
++    hit_latency = '20ns'
++    response_latency = '20ns'
++    mshrs = 64
++    tgts_per_mshr = 12
++
++class L4Cache(BaseCache):
++    size = '128MB'
++    assoc = 8
++    block_size = 64
++    hit_latency = '50ns'
++    response_latency = '50ns'
++    mshrs = 64
++    tgts_per_mshr = 12
++
++
++#class PageTableWalkerCache(BaseCache):
++#    assoc = 2
++#    block_size = 64
++#    hit_latency = '1ns'
++#    response_latency = '1ns'
++#    mshrs = 10
++#    size = '1kB'
++#    tgts_per_mshr = 12
++#    is_top_level = True
++
++#class IOCache(BaseCache):
++#    assoc = 8
++#    block_size = 64
++#    hit_latency = '10ns'
++#    response_latency = '10ns'
++#    mshrs = 20
++#    size = '1kB'
++#    tgts_per_mshr = 12
++#    forward_snoops = False
++#    is_top_level = True
+diff --git a/configs/spec2k6_classic/run.py b/configs/spec2k6_classic/run.py
+new file mode 100644
+index 0000000..c5ee410
+--- /dev/null
++++ b/configs/spec2k6_classic/run.py
+@@ -0,0 +1,255 @@
++# Copyright (c) 2012 Purdue University                                            
++# All rights reserved.                                                            
++#                                                                                 
++# Redistribution and use in source and binary forms, with o without               
++# modification, are permitted provided that the following coditions are           
++# met: redistributions of source code must retain the above cpyright              
++# notice, this list of conditions and the following disclaimer                    
++# redistributions in binary form must reproduce the above copyrght                
++# notice, this list of conditions and the following disclaimer i the              
++# documentation and/or other materials provided with the distribuion;             
++# neither the name of the copyright holders nor the names of its                  
++# contributors may be used to endorse or promote products derived fom             
++# this software without specific prior written permission.                        
++#                                                                                 
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS             
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT               
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR           
++# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT            
++# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,           
++# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT                
++# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,           
++# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY           
++# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT             
++# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE           
++# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.            
++#                                                                                 
++# Authors: Malek Musleh                                                           
++### The following file was referenced from the following site:                    
++### http://www.m5sim.org/SPEC_CPU2006_benchmarks                                  
++###                                                                               
++### and subsequent changes were made    
++
++import os
++import optparse
++import sys
++
++import m5
++from m5.defines import buildEnv
++from m5.objects import *
++from m5.params import *
++from m5.util import addToPath, fatal
++from m5.objects import *
++
++
++addToPath('../common')
++addToPath('../ruby')
++addToPath('../topologies')
++
++import Options
++import Ruby
++import Simulation
++import CacheConfig
++from Caches import *
++from cpu2000 import *
++import spec2k6
++
++from Ruby import *
++
++# Get paths we might need.  It's expected this file is in m5/configs/example.
++config_path = os.path.dirname(os.path.abspath(__file__))
++print config_path
++config_root = os.path.dirname(config_path)
++print config_root
++m5_root = os.path.dirname(config_root)
++print m5_root
++
++#execfile(os.path.join(config_root, "ruby", "Ruby.py"))
++
++parser = optparse.OptionParser()
++Options.addCommonOptions(parser)
++Options.addSEOptions(parser)
++
++if '--ruby' in sys.argv:
++    Ruby.define_options(parser)
++
++# Benchmark options
++
++parser.add_option("-b", "--benchmark", default="",
++                 help="The benchmark to be loaded.")
++
++parser.add_option("-l", "--memlatency", default="30ns", type="string",
++		help="Total latency of memory-side TLB+memory")
++
++(options, args) = parser.parse_args()
++
++if args:
++    print "Error: script doesn't take any positional arguments"
++    sys.exit(1)
++
++if options.benchmark == 'perlbench':
++   process = spec2k6.perlbench
++elif options.benchmark == 'bzip2':
++   process = spec2k6.bzip2
++elif options.benchmark == 'gcc':
++   process = spec2k6.gcc
++elif options.benchmark == 'bwaves':
++   process = spec2k6.bwaves
++elif options.benchmark == 'gamess':
++   process = spec2k6.gamess
++elif options.benchmark == 'mcf':
++   process = spec2k6.mcf
++elif options.benchmark == 'milc':
++   process = spec2k6.milc
++elif options.benchmark == 'zeusmp':
++   process = spec2k6.zeusmp
++elif options.benchmark == 'gromacs':
++   process = spec2k6.gromacs
++elif options.benchmark == 'cactusADM':
++   process = spec2k6.cactusADM
++elif options.benchmark == 'leslie3d':
++   process = spec2k6.leslie3d
++elif options.benchmark == 'namd':
++   process = spec2k6.namd
++elif options.benchmark == 'gobmk':
++   process = spec2k6.gobmk;
++elif options.benchmark == 'dealII':
++   process = spec2k6.dealII
++elif options.benchmark == 'soplex':
++   process = spec2k6.soplex
++elif options.benchmark == 'povray':
++   process = spec2k6.povray
++elif options.benchmark == 'calculix':
++   process = spec2k6.calculix
++elif options.benchmark == 'hmmer':
++   process = spec2k6.hmmer
++elif options.benchmark == 'sjeng':
++   process = spec2k6.sjeng
++elif options.benchmark == 'GemsFDTD':
++   process = spec2k6.GemsFDTD
++elif options.benchmark == 'libquantum':
++   process = spec2k6.libquantum
++elif options.benchmark == 'h264ref':
++   process = spec2k6.h264ref
++elif options.benchmark == 'tonto':
++   process = spec2k6.tonto
++elif options.benchmark == 'lbm':
++   process = spec2k6.lbm
++elif options.benchmark == 'omnetpp':
++   process = spec2k6.omnetpp
++elif options.benchmark == 'astar':
++   process = spec2k6.astar
++elif options.benchmark == 'wrf':
++   process = spec2k6.wrf
++elif options.benchmark == 'sphinx3':
++   process = spec2k6.sphinx3
++elif options.benchmark == 'xalancbmk':
++   process = spec2k6.xalancbmk
++elif options.benchmark == 'specrand_i':
++   process = spec2k6.specrand_i
++elif options.benchmark == 'specrand_f':
++   process = spec2k6.specrand_f
++
++multiprocesses = []
++numThreads = 1
++
++(CPUClass, test_mem_mode, FutureClass) = Simulation.setCPUClass(options)
++CPUClass.clock = '1.0GHz'
++CPUClass.numThreads = numThreads
++
++multiprocesses.append(process)
++
++np = options.num_cpus
++system = System(cpu = [CPUClass(cpu_id=i) for i in xrange(np)],
++                physmem = SimpleMemory(range=AddrRange("512MB")),
++                membus = CoherentBus(), mem_mode = test_mem_mode)
++
++
++for i in xrange(np):
++    if options.smt:
++        system.cpu[i].workload = multiprocesses
++    elif len(multiprocesses) == 1:
++        system.cpu[i].workload = multiprocesses[0]
++    else:
++        system.cpu[i].workload = multiprocesses[i]
++
++if options.ruby:
++    options.use_map = True
++    Ruby.create_system(options, system)
++    assert(options.num_cpus == len(system.ruby._cpu_ruby_ports))
++
++    for i in xrange(np):
++        ruby_port = system.ruby._cpu_ruby_ports[i]
++    
++        # Create the interrupt controller and connect its ports to Ruby
++        system.cpu[i].createInterruptController()
++        # Connect the cpu's cache ports to Ruby
++        system.cpu[i].icache_port = ruby_port.slave
++        system.cpu[i].dcache_port = ruby_port.slave
++        if buildEnv['TARGET_ISA'] == 'x86':
++            system.cpu[i].interrupts.pio = ruby_port.master
++            system.cpu[i].interrupts.int_master = ruby_port.slave
++            system.cpu[i].interrupts.int_slave = ruby_port.master
++    
++            system.cpu[i].itb.walker.port = ruby_port.slave
++            system.cpu[i].dtb.walker.port = ruby_port.slave
++else:
++    for i in xrange(np):
++	#
++	# Create L1 Cache
++	#
++        system.cpu[i].icache = L1ICache()
++        system.cpu[i].dcache = L1DCache()
++
++	# Link L1 Cache to CPU
++        system.cpu[i].icache.cpu_side = system.cpu[i].icache_port
++        system.cpu[i].dcache.cpu_side = system.cpu[i].dcache_port
++
++	# Create L2 coherent crossbar
++        system.cpu[i].l2bus = CoherentBus(CacheBus=True)
++
++	# Link L1 Cache to L2 XBus
++        system.cpu[i].icache.mem_side = system.cpu[i].l2bus.slave
++        system.cpu[i].dcache.mem_side = system.cpu[i].l2bus.slave
++
++	#
++	# Create L2 Cache and connect it to the l2bus
++	#
++	system.cpu[i].l2cache = L2Cache()
++	system.cpu[i].l2cache.cpu_side = system.cpu[i].l2bus.master
++
++	# Create L3 Cache coherent crossbar
++	system.cpu[i].l3bus = CoherentBus(CacheBus=True)
++
++	# Link L2 Cache to L3 XBus
++	system.cpu[i].l2cache.mem_side = system.cpu[i].l3bus.slave
++
++	#
++	# Creat L3 Cache and connect it to the l3bus
++	#
++	system.cpu[i].l3cache = L3Cache()
++	system.cpu[i].l3cache.cpu_side = system.cpu[i].l3bus.master
++
++	# Create L4 Cache coherent corssbar
++	system.cpu[i].l4bus = CoherentBus(CacheBus=True)
++
++	# Link L3 Cache to L4 XBus
++	system.cpu[i].l3cache.mem_side = system.cpu[i].l4bus.slave
++
++	#
++	# Create L4 Cache and connect it to the l4bus
++	#
++	system.cpu[i].l4cache = L4Cache()
++	system.cpu[i].l4cache.cpu_side = system.cpu[i].l4bus.master
++
++	# Connect LLC to memory bus
++	system.cpu[i].l4cache.mem_side = system.membus.slave
++
++        system.cpu[i].createInterruptController()
++
++    system.system_port = system.membus.slave
++    system.physmem.port = system.membus.master
++    system.physmem.latency = options.memlatency
++
++root = Root(full_system = False, system = system)
++Simulation.run(options, root, system, FutureClass)
+diff --git a/configs/spec2k6_classic/spec2k6.py b/configs/spec2k6_classic/spec2k6.py
+new file mode 100644
+index 0000000..e8e22e0
+--- /dev/null
++++ b/configs/spec2k6_classic/spec2k6.py
+@@ -0,0 +1,283 @@
++
++
++# Copyright (c) 2012 Purdue University                
++# All rights reserved.                                                         
++# 
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are
++# met: redistributions of source code must retain the above copyright
++# notice, this list of conditions and the following disclaimer;               
++# redistributions in binary form must reproduce the above copyright            
++# notice, this list of conditions and the following disclaimer in the          
++# documentation and/or other materials provided with the distribution;
++# neither the name of the copyright holders nor the names of its
++# contributors may be used to endorse or promote products derived from
++# this software without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS         
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT         
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT         
++# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
++#            
++# Authors: Malek Musleh   
++
++### The following file was referenced from the following site: 
++### http://www.m5sim.org/SPEC_CPU2006_benchmarks
++###
++### and subsequent changes were made
++
++
++import os
++import optparse
++import sys
++
++import m5
++from m5.objects import *
++
++m5.util.addToPath('../common')
++
++bench_dir='/home/ys/SPEC_2006/'
++
++### Note: That some benchmarks require this variable to be modified to match
++### your home environment. This variable only applies for certain benchmarks
++### that require read/write to an output directory
++output_dir= '/home/ys/SPEC_2006/outputs/spec2k6/'
++
++#400.perlbench
++perlbench = LiveProcess()
++perlbench_dir = '400.perlbench/'
++perlbench.executable =  bench_dir+perlbench_dir+'/exe/perlbench'
++perlbench.cmd = [perlbench.executable] + ['-I./lib', 'attrs.pl']
++perlbench.output = 'attrs.out'
++
++#401.bzip2
++bzip2 = LiveProcess()
++bzip2_dir = '401.bzip2/'
++bzip2.executable =  bench_dir+bzip2_dir+'/exe/bzip2'
++data=bench_dir+bzip2_dir+'data/ref/input/input.source'
++bzip2.cmd = [bzip2.executable] + [data, '1']
++bzip2.output = 'input.source.out'
++
++#403.gcc
++gcc = LiveProcess()
++gcc_dir = '403.gcc/'
++gcc.executable =  bench_dir+gcc_dir+'/exe/gcc'
++data=bench_dir+'/data/ref/input/166.i'
++output=output_dir+'/gcc/166.s'
++gcc.cmd = [gcc.executable] + [data]+['-o',output] + ['-quiet'] + ['-funroll-loops'] + ['-fforce-mem'] + ['-fcse-follow-jumps'] + ['-fcse-skip-blocks'] + ['-fexpensive-optimizations'] + ['-fstrength-reduce'] + ['-fpeephole']  + ['-fschedule-insns'] + ['-finline-functions'] + ['-fschedule-insns2']
++
++#410.bwaves
++bwaves = LiveProcess()
++bwaves.executable =  bench_dir+'/exe/bwaves'
++#bwaves.data = bwaves.data
++bwaves.cmd = [bwaves.executable]
++
++#416.gamess
++gamess=LiveProcess()
++gamess_dir='416.gamess/'
++gamess.executable =  bench_dir+gamess_dir+'/exe/gamess'
++gamess.cmd = [gamess.executable]
++gamess.input='exam29.config'
++gamess.output='exam29.output'
++
++#429.mcf
++mcf = LiveProcess()
++mcf_dir = '429.mcf/'
++mcf.executable = bench_dir+mcf_dir+'/exe/mcf'
++data=bench_dir+mcf_dir+'/data/ref/input/inp.in'
++mcf.cmd = [mcf.executable] + [data]
++mcf.output = 'inp.out'
++
++#433.milc
++milc=LiveProcess()
++milc_dir='433.milc/'
++milc.executable = bench_dir+milc_dir+'/exe/milc'
++stdin=bench_dir+milc_dir+'/data/ref/input/su3imp.in'
++milc.cmd = [milc.executable]
++milc.input=stdin
++milc.output='su3imp.out'
++
++#434.zeusmp
++zeusmp=LiveProcess()
++zeusmp_dir='434.zeusmp/'
++zeusmp.executable = bench_dir+zeusmp_dir+'/exe/zeusmp'
++zeusmp.cmd = [zeusmp.executable]
++zeusmp.output = 'zeusmp.stdout'
++
++#435.gromacs
++gromacs = LiveProcess()
++gromacs_dir='435.gromacs/'
++gromacs.executable = bench_dir+gromacs_dir+gromacs_dir+'/exe/gromacs'
++data=bench_dir+gromacs_dir+'/data/ref/input/gromacs.tpr'
++gromacs.cmd = [gromacs.executable] + ['-silent','-deffnm',data,'-nice','0']
++
++#436.cactusADM
++cactusADM = LiveProcess()
++cactusADM_dir = '436.cactusADM/'
++cactusADM.executable =  bench_dir+cactusADM_dir+'/exe/cactusADM'
++data=bench_dir+cactusADM_dir+'/data/ref/input/benchADM.par'
++cactusADM.cmd = [cactusADM.executable] + [data]
++cactusADM.output = 'benchADM.out'
++
++#437.leslie3d
++leslie3d=LiveProcess()
++leslie3d_dir= '437.leslie3d/'
++leslie3d.executable = bench_dir+leslie3d_dir+'/exe/leslie3d'
++stdin=bench_dir+leslie3d_dir+'/data/ref/input/leslie3d.in'
++leslie3d.cmd = [leslie3d.executable]
++leslie3d.input=stdin
++leslie3d.output='leslie3d.stdout'
++
++#444.namd
++namd = LiveProcess()
++namd_dir='444.namd/'
++namd.executable =  bench_dir+namd_dir+'/exe/namd'
++input=bench_dir+namd_dir+'/data/all/input/namd.input'
++namd.cmd = [namd.executable] + ['--input',input,'--iterations','1','--output','namd.out']
++namd.output='namd.stdout'
++
++#445.gobmk
++gobmk=LiveProcess()
++gobmk_dir = '445.gobmk/'
++gobmk.executable = bench_dir+gobmk_dir+'/exe/gobmk'
++stdin=bench_dir+gobmk_dir+'/data/ref/input/13x13.tst'
++gobmk.cmd = [gobmk.executable]+['--quiet','--mode','gtp']
++gobmk.input=stdin
++gobmk.output='capture.out'
++
++#447.dealII
++dealII=LiveProcess()
++dealII_dir = '447.dealII/'
++dealII.executable = bench_dir+dealII_dir+'/exe/dealII'
++dealII.cmd = [gobmk.executable]+['8']
++dealII.output='log'
++
++#450.soplex
++soplex=LiveProcess()
++soplex_dir = '450.soplex/'
++soplex.executable = bench_dir+soplex_dir+'/exe/soplex'
++data=bench_dir+soplex_dir+'/data/ref/input/ref.mps'
++soplex.cmd = [soplex.executable]+['-m10000',data]
++soplex.output = 'test.out'
++
++#453.povray
++povray=LiveProcess()
++povray_dir = '453.povray/'
++povray.executable = bench_dir+povray_dir+'/exe/povray'
++data=bench_dir+povray_dir+'/data/ref/input/SPEC-benchmark-ref.ini'
++povray.cmd = [povray.executable]+[data]
++povray.output = 'SPEC-benchmark-ref.stdout'
++
++#454.calculix
++calculix=LiveProcess()
++calculix_dir='454.calculix/'
++calculix.executable = bench_dir+calculix_dir+'/exe/calculix'
++data='/data/ref/input/hyperviscoplastic.inp'
++calculix.cmd = [calculix.executable]+['-i',data]
++calculix.output = 'beampic.log'
++
++#456.hmmer
++hmmer=LiveProcess()
++hmmr_dir = '456.hmmer/'
++hmmer.executable = bench_dir+hmmr_dir+'/exe/hmmer'
++data=bench_dir+hmmr_dir+'/data/ref/input/nph3.hmm'
++hmmer.cmd = [hmmer.executable]+['--fixed', '0', '--mean', '325', '--num', '5000', '--sd', '200', '--seed', '0', data]
++hmmer.output = 'bombesin.out'
++
++#458.sjeng
++sjeng=LiveProcess()
++sjeng_dir = '458.sjeng/'
++sjeng.executable =  bench_dir+sjeng_dir+'/exe/sjeng'
++data=bench_dir+sjeng_dir+'/data/ref/input/ref.txt'
++sjeng.cmd = [sjeng.executable]+[data]
++sjeng.output = 'ref.out'
++
++#459.GemsFDTD
++GemsFDTD=LiveProcess()
++GemsFDTD_dir = '459.GemsFDTD/'
++GemsFDTD.executable =  bench_dir+GemsFDTD_dir+'/exe/GemsFDTD'
++GemsFDTD.cmd = [GemsFDTD.executable]
++GemsFDTD.output = 'ref.log'
++
++#462.libquantum
++libquantum=LiveProcess()
++libquantum_dir ='462.libquantum/'
++libquantum.executable = bench_dir+libquantum_dir+'/exe/libquantum'
++libquantum.cmd = [libquantum.executable],'33','5'
++libquantum.output = 'ref.out'
++
++#464.h264ref
++h264ref=LiveProcess()
++h264_dir = '464.h264ref/'
++h264ref.executable = bench_dir+h264_dir+'/exe/h264ref'
++data=bench_dir+h264_dir+'/data/ref/input/foreman_ref_encoder_baseline.cfg'
++h264ref.cmd = [h264ref.executable]+['-d',data]
++h264ref.output = 'foreman_ref_encoder_baseline.out'
++
++#470.lbm
++lbm=LiveProcess()
++lbm_dir='470.lbm/'
++lbm.executable = bench_dir+lbm_dir+'/exe/lbm'
++data=bench_dir+lbm_dir+'/data/ref/input/100_100_130_ldc.of'
++lbm.cmd = [lbm.executable]+['20', 'reference.dat', '0', '1' ,data]
++lbm.output = 'lbm.out'
++
++#471.omnetpp
++omnetpp=LiveProcess()
++omnetpp_dir = '471.omnetpp/'
++omnetpp.executable =  bench_dir+omnetpp_dir+'/exe/omnetpp'
++data=bench_dir+omnetpp_dir+'/data/ref/input/omnetpp.ini'
++omnetpp.cmd = [omnetpp.executable]+[data]
++omnetpp.output = 'omnetpp.log'
++
++#473.astar
++astar=LiveProcess()
++astar_dir='473.astar'
++astar.executable = bench_dir+astar_dir+'/exe/astar'
++data=bench_dir+astar_dir+'/data/ref/input/rivers.cfg'
++astar.cmd = [astar.executable]+[data]
++astar.output = 'lake.out'
++
++#481.wrf
++wrf=LiveProcess()
++wrf_dir = '481.wrf'
++wrf.executable = bench_dir+wrf_dir+'/exe/wrf'
++data = bench_dir+wrf_dir+'/data/ref/input/namelist.input'
++wrf.cmd = [wrf.executable]+[data]
++wrf.output = 'rsl.out.0000'
++
++#482.sphinx
++sphinx3=LiveProcess()
++sphinx3_dir = '482.sphinx/'
++sphinx3.executable =  bench_dir+sphinx3_dir+'/exe/sphinx'
++sphinx3.cmd = [sphinx3.executable]+['ctlfile', '.', 'args.an4']
++sphinx3.output = 'an4.out'
++
++#483.xalancbmk
++xalancbmk=LiveProcess()
++xalanch_dir = '483.xalancbmk/'
++xalancbmk.executable =  bench_dir+xalanch_dir+'/exe/Xalan'
++data = bench_dir + xalanch_dir + '/data/ref/input/'
++xalancbmk.cmd = [xalancbmk.executable]+['-v',data+'t5.xml',data+'xalanc.xsl']
++xalancbmk.output = 'ref.out'
++
++#998.specrand
++specrand_i=LiveProcess()
++specrand_i_dir = '998.specrand/'
++specrand_i.executable = bench_dir+specrand_i_dir+'/exe/specrand_i'
++specrand_i.cmd = [specrand_i.executable] + ['324342','24239']
++specrand_i.output = 'rand.24239.out'
++
++#999.specrand
++specrand_f=LiveProcess()
++specrand_f_dir = '999.specrand/'
++specrand_f.executable = bench_dir+specrand_f_dir+'/exe/specrand_f'
++specrand_f.cmd = [specrand_f.executable] + ['324342','24239']
++specrand_f.output = 'rand.24239.out'
+diff --git a/src/arch/alpha/faults.cc b/src/arch/alpha/faults.cc
+index e4a5c92..3c07638 100644
+--- a/src/arch/alpha/faults.cc
++++ b/src/arch/alpha/faults.cc
+@@ -189,13 +189,14 @@ ItbPageFault::invoke(ThreadContext *tc, StaticInstPtr inst)
+         ItbFault::invoke(tc);
+         return;
+     }
+-
++    printf("ItbPageFault\n");
+     Process *p = tc->getProcessPtr();
+     TlbEntry entry;
+     bool success = p->pTable->lookup(pc, entry);
+     if (!success) {
+         panic("Tried to execute unmapped address %#x.\n", pc);
+     } else {
++        //printf("page table lookup success, va:%#lx\n", vaddr.page());
+         VAddr vaddr(pc);
+         tc->getITBPtr()->insert(vaddr.page(), entry);
+     }
+diff --git a/src/arch/alpha/tlb.cc b/src/arch/alpha/tlb.cc
+index 1d18c8d..b76f178 100644
+--- a/src/arch/alpha/tlb.cc
++++ b/src/arch/alpha/tlb.cc
+@@ -164,7 +164,8 @@ TLB::lookup(Addr vpn, uint8_t asn)
+ {
+     // assume not found...
+     TlbEntry *retval = NULL;
+-
++    //DPRINTF(TLB, "lookup %#x, asn %#x\n", vpn, (int)asn);
++    
+     if (EntryCache[0]) {
+         if (vpn == EntryCache[0]->tag &&
+             (EntryCache[0]->asma || EntryCache[0]->asn == asn))
+@@ -186,7 +187,8 @@ TLB::lookup(Addr vpn, uint8_t asn)
+                 int index = i->second;
+                 TlbEntry *entry = &table[index];
+                 assert(entry->valid);
+-                if (vpn == entry->tag && (entry->asma || entry->asn == asn)) {
++                //if (vpn == entry->tag && (entry->asma || entry->asn == asn)) {
++                if (vpn == entry->tag ) {
+                     retval = updateCache(entry);
+                     break;
+                 }
+@@ -194,10 +196,14 @@ TLB::lookup(Addr vpn, uint8_t asn)
+                 ++i;
+             }
+         }
++    } else {
++         DPRINTF(TLB, "Hit in EntryCache: vpn=%#x, asn=%#x -> %s ppn=%#x\n",
++	      vpn, (int)asn, retval ? "hit" : "miss", retval ? retval->ppn : 0);
+     }
+ 
+-    DPRINTF(TLB, "lookup %#x, asn %#x -> %s ppn %#x\n", vpn, (int)asn,
++    DPRINTF(TLB, "lookup: vpn=%#x, asn=%#x -> %s ppn=%#x\n", vpn, (int)asn,
+             retval ? "hit" : "miss", retval ? retval->ppn : 0);
++
+     return retval;
+ }
+ 
+@@ -445,21 +451,220 @@ TLB::translateInst(RequestPtr req, ThreadContext *tc)
+ }
+ 
+ Fault
+-TLB::translateData(RequestPtr req, ThreadContext *tc, bool write)
++TLB::translateInst_post(RequestPtr req, PacketPtr pkt)
++{
++       if (!validVirtualAddress(pkt->getAddr())) {
++            DPRINTF(TLB, "[%s:%d] Addr:%#lx is not valid\n",
++	    	__func__, __LINE__, pkt->getAddr());
++            fetch_acv++;
++            return new ItbAcvFault(pkt->getAddr());
++        }
++
++        // VA<42:41> == 2, VA<39:13> maps directly to PA<39:13> for EV5
++        // VA<47:41> == 0x7e, VA<40:13> maps directly to PA<40:13> for EV6
++        if (VAddrSpaceEV6(pkt->getAddr()) == 0x7e) {
++	    DPRINTF(TLB, "[%s:%d] we are here, addr=%#lx",
++	    	__func__, __LINE__, pkt->getAddr());
++
++            // only valid in kernel mode
++            if (ICM_CM(pkt->getRegTLB_icm()) !=
++                mode_kernel) {
++                fetch_acv++;
++                return new ItbAcvFault(pkt->getAddr());
++            }
++
++            pkt->setPaddr(pkt->getAddr() & PAddrImplMask);
++
++            // sign extend the physical address properly
++            if (pkt->getPaddr() & PAddrUncachedBit40)
++                pkt->setPaddr(pkt->getPaddr() | ULL(0xf0000000000));
++            else
++                pkt->setPaddr(pkt->getPaddr() & ULL(0xffffffffff));
++
++	    DPRINTF(TLB, "[%s:%d] we are here, PAaddr=%#lx",
++	    	__func__, __LINE__, pkt->getPaddr());
++        } else {
++            // not a physical address: need to look up pte
++            int asn = DTB_ASN_ASN(pkt->getRegTLB_dtb_asn());
++            TlbEntry *entry = lookup(VAddr(pkt->getAddr()).vpn(),
++                              asn);
++
++            if (!entry) {
++                fetch_misses++;
++                return new ItbPageFault(pkt->getAddr());
++            }
++
++	    DPRINTF(TLB, "[%s:%d] ITLB hit, entry->ppn=%#lx offset=%#lx, Paddr=%#lx\n",
++	    	__func__,__LINE__,
++	    	(entry->ppn << PageShift), (VAddr(pkt->getAddr()).offset() & ~3),
++		(entry->ppn << PageShift) +(VAddr(pkt->getAddr()).offset()& ~3));
++
++            pkt->setPaddr((entry->ppn << PageShift) +
++                          (VAddr(pkt->getAddr()).offset()
++                           & ~3));
++
++            // check permissions for this access
++            if (!(entry->xre &
++                  (1 << ICM_CM(pkt->getRegTLB_icm())))) {
++                // instruction access fault
++                fetch_acv++;
++                return new ItbAcvFault(pkt->getAddr());
++            }
++
++            fetch_hits++;
++        }
++
++    // check that the physical address is ok (catch bad physical addresses)
++    if (pkt->getPaddr() & ~PAddrImplMask) {
++        assert(0);
++        return new MachineCheckFault();
++    }
++
++    return NoFault;
++
++}
++
++Fault
++TLB::translateData_post(RequestPtr req, PacketPtr pkt, bool write)
+ {
++    ThreadContext *tc = pkt->tc;
++    assert(tc);
+     mode_type mode =
+         (mode_type)DTB_CM_CM(tc->readMiscRegNoEffect(IPR_DTB_CM));
+ 
+     /**
+      * Check for alignment faults
+      */
+-    if (req->getVaddr() & (req->getSize() - 1)) {
+-        DPRINTF(TLB, "Alignment Fault on %#x, size = %d\n", req->getVaddr(),
+-                req->getSize());
++    if (pkt->getAddr() & (pkt->getSize() - 1)) {
++        DPRINTF(TLB, "Alignment Fault on %#x, size = %d\n", pkt->getAddr(),
++                pkt->getSize());
+         uint64_t flags = write ? MM_STAT_WR_MASK : 0;
+-        return new DtbAlignmentFault(req->getVaddr(), req->getFlags(), flags);
++        return new DtbAlignmentFault(pkt->getAddr(), pkt->getReqFlags(), flags);
+     }
+ 
++        // verify that this is a good virtual address
++        if (!validVirtualAddress(pkt->getAddr())) {
++            if (write) { write_acv++; } else { read_acv++; }
++            uint64_t flags = (write ? MM_STAT_WR_MASK : 0) |
++                MM_STAT_BAD_VA_MASK |
++                MM_STAT_ACV_MASK;
++            return new DtbPageFault(pkt->getAddr(), pkt->getReqFlags(), flags);
++        }
++
++        // Check for "superpage" mapping
++        if (VAddrSpaceEV6(pkt->getAddr()) == 0x7e) {
++            // only valid in kernel mode
++            if (DTB_CM_CM(tc->readMiscRegNoEffect(IPR_DTB_CM)) !=
++                mode_kernel) {
++                if (write) { write_acv++; } else { read_acv++; }
++                uint64_t flags = ((write ? MM_STAT_WR_MASK : 0) |
++                                  MM_STAT_ACV_MASK);
++
++                return new DtbAcvFault(pkt->getAddr(), pkt->getReqFlags(),
++                                       flags);
++            }
++
++            pkt->setPaddr(pkt->getAddr() & PAddrImplMask);
++
++            // sign extend the physical address properly
++            if (pkt->getPaddr() & PAddrUncachedBit40)
++                pkt->setPaddr(pkt->getPaddr() | ULL(0xf0000000000));
++            else
++                pkt->setPaddr(pkt->getPaddr() & ULL(0xffffffffff));
++        } else {
++            if (write)
++                write_accesses++;
++            else
++                read_accesses++;
++
++            int asn = DTB_ASN_ASN(tc->readMiscRegNoEffect(IPR_DTB_ASN));
++
++            // not a physical address: need to look up pte
++            TlbEntry *entry = lookup(VAddr(pkt->getAddr()).vpn(), asn);
++
++            if (!entry) {
++                // page fault
++                if (write) { write_misses++; } else { read_misses++; }
++                uint64_t flags = (write ? MM_STAT_WR_MASK : 0) |
++                    MM_STAT_DTB_MISS_MASK;
++                return (pkt->getReqFlags() & Request::VPTE) ?
++                    (Fault)(new PDtbMissFault(pkt->getAddr(), pkt->getReqFlags(),
++                                              flags)) :
++                    (Fault)(new NDtbMissFault(pkt->getAddr(), pkt->getReqFlags(),
++                                              flags));
++            }
++
++	    DPRINTF(TLB, "[%s:%d] DTLB hit, entry->ppn=%#lx offset=%#lx, Paddr=%#lx\n",
++	    	__func__,__LINE__,
++	    	(entry->ppn << PageShift), (VAddr(pkt->getAddr()).offset() & ~3),
++		(entry->ppn << PageShift) +(VAddr(pkt->getAddr()).offset()& ~3));
++
++            pkt->setPaddr((entry->ppn << PageShift) +
++                          VAddr(pkt->getAddr()).offset());
++
++            if (write) {
++                if (!(entry->xwe & MODE2MASK(mode))) {
++                    // declare the instruction access fault
++                    write_acv++;
++                    uint64_t flags = MM_STAT_WR_MASK |
++                        MM_STAT_ACV_MASK |
++                        (entry->fonw ? MM_STAT_FONW_MASK : 0);
++                    return new DtbPageFault(pkt->getAddr(), pkt->getReqFlags(),
++                                            flags);
++                }
++                if (entry->fonw) {
++                    write_acv++;
++                    uint64_t flags = MM_STAT_WR_MASK | MM_STAT_FONW_MASK;
++                    return new DtbPageFault(pkt->getAddr(), pkt->getReqFlags(),
++                                            flags);
++                }
++            } else {
++                if (!(entry->xre & MODE2MASK(mode))) {
++                    read_acv++;
++                    uint64_t flags = MM_STAT_ACV_MASK |
++                        (entry->fonr ? MM_STAT_FONR_MASK : 0);
++                    return new DtbAcvFault(pkt->getAddr(), pkt->getReqFlags(),
++                                           flags);
++                }
++                if (entry->fonr) {
++                    read_acv++;
++                    uint64_t flags = MM_STAT_FONR_MASK;
++                    return new DtbPageFault(pkt->getAddr(), pkt->getReqFlags(),
++                                            flags);
++                }
++            }
++        }
++
++        if (write)
++            write_hits++;
++        else
++            read_hits++;
++
++    // check that the physical address is ok (catch bad physical addresses)
++    if (pkt->getPaddr() & ~PAddrImplMask) {
++        assert(0);
++        return new MachineCheckFault();
++    }
++
++    return NoFault;
++}
++
++Fault
++TLB::translateData(RequestPtr req, ThreadContext *tc, bool write)
++{
++    mode_type mode =
++        (mode_type)DTB_CM_CM(tc->readMiscRegNoEffect(IPR_DTB_CM));
++
++    /**
++     * Check for alignment faults
++     */
++    //if (req->getVaddr() & (req->getSize() - 1)) {
++    //    DPRINTF(TLB, "Alignment Fault on %#x, size = %d\n", req->getVaddr(),
++    //            req->getSize());
++    //    uint64_t flags = write ? MM_STAT_WR_MASK : 0;
++    //    return new DtbAlignmentFault(req->getVaddr(), req->getFlags(), flags);
++    //}
++
+     if (PcPAL(req->getPC())) {
+         mode = (req->getFlags() & Request::ALTMODE) ?
+             (mode_type)ALT_MODE_AM(
+@@ -592,12 +797,50 @@ TLB::translateAtomic(RequestPtr req, ThreadContext *tc, Mode mode)
+         return translateData(req, tc, mode == Write);
+ }
+ 
++Fault
++TLB::translateAtomic_post(PacketPtr pkt)
++{
++    DPRINTF(TLB, "%s:%d\n", __func__, __LINE__);
++    RequestPtr req=0;
++    if (pkt->TLBisExecute()) {
++	return translateInst_post(req, pkt);
++    } else {
++        return translateData_post(req, pkt, pkt->TLBisWrite());
++    }
++}
++
+ void
+ TLB::translateTiming(RequestPtr req, ThreadContext *tc,
+         Translation *translation, Mode mode)
+ {
++    Fault fault;
++
+     assert(translation);
+-    translation->finish(translateAtomic(req, tc, mode), req, tc, mode);
++
++    /*
++     * Workaround for the first instruction
++     * the nextPC was set properly by default
++     */
++    if (req->getVaddr() < 0x50) {
++        printf("[%s:%s():%d] Get req->getVaddr = 0, isExecute=%s \n",
++		__FILE__,__func__, __LINE__, req->isExecute ? "true" : "false");
++
++      // if (req->isExecute) {
++           fault = new ItbPageFault(req->getVaddr());
++      // } else {
++      //     uint64_t flags = req->isWrite? MM_STAT_WR_MASK : 0;
++      //     fault = new DtbPageFault(req->getVaddr(), req->getFlags(), flags);
++       //}
++    } else {
++        /*
++	 * NO TLB in CPU-side
++	 * Always return NoFault, to the finish() can access cache directly
++	 */
++        fault = NoFault;
++	req->setPaddr(req->getVaddr());
++    }
++
++    translation->finish(fault, req, tc, mode);
+ }
+ 
+ Fault
+diff --git a/src/arch/alpha/tlb.hh b/src/arch/alpha/tlb.hh
+index 4e56100..26b5ba5 100644
+--- a/src/arch/alpha/tlb.hh
++++ b/src/arch/alpha/tlb.hh
+@@ -45,6 +45,16 @@
+ #include "sim/fault_fwd.hh"
+ #include "sim/tlb.hh"
+ 
++#include "mem/bus.hh"
++#include "params/CoherentBus.hh"
++
++#include "mem/packet.hh"
++#include "mem/packet_access.hh"
++#include "mem/port.hh"
++#include "params/InOrderCPU.hh"
++#include "sim/sim_object.hh"
++
++
+ class ThreadContext;
+ 
+ namespace AlphaISA {
+@@ -140,8 +150,12 @@ class TLB : public BaseTLB
+     Fault translateData(RequestPtr req, ThreadContext *tc, bool write);
+     Fault translateInst(RequestPtr req, ThreadContext *tc);
+ 
++    Fault translateInst_post(RequestPtr req, PacketPtr pkt);
++    Fault translateData_post(RequestPtr req, PacketPtr pkt, bool write);
++
+   public:
+     Fault translateAtomic(RequestPtr req, ThreadContext *tc, Mode mode);
++    Fault translateAtomic_post(PacketPtr pkt);
+     void translateTiming(RequestPtr req, ThreadContext *tc,
+                          Translation *translation, Mode mode);
+     /**
+diff --git a/src/base/trace.hh b/src/base/trace.hh
+index dbeffdc..d09e2e3 100644
+--- a/src/base/trace.hh
++++ b/src/base/trace.hh
+@@ -122,6 +122,13 @@ inline const std::string &name() { return Trace::DefaultName; }
+     Trace::dprintf((Tick)-1, string(), __VA_ARGS__);            \
+ } while (0)
+ 
++#define PR(...) do {		\
++} while (0)
++
++#define _PR(...) do {		\
++	printf(__VA_ARGS__);	\
++} while (0)
++
+ #else // !TRACING_ON
+ 
+ #define DTRACE(x) (false)
+@@ -133,6 +140,8 @@ inline const std::string &name() { return Trace::DefaultName; }
+ #define DPRINTFN(...) do {} while (0)
+ #define DPRINTFNR(...) do {} while (0)
+ 
++#define PR(...) do {} while (0)
++
+ #endif  // TRACING_ON
+ 
+ #endif // __BASE_TRACE_HH__
+diff --git a/src/cpu/base_dyn_inst.hh b/src/cpu/base_dyn_inst.hh
+index 20278bd..9dfb1cc 100644
+--- a/src/cpu/base_dyn_inst.hh
++++ b/src/cpu/base_dyn_inst.hh
+@@ -892,6 +892,9 @@ BaseDynInst<Impl>::readMem(Addr addr, uint8_t *data,
+ 
+     if (translationCompleted()) {
+         if (fault == NoFault) {
++	    printf("[%s:%s():%d] NoFault, req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
++	    	__FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
++
+             effAddr = req->getVaddr();
+             effSize = size;
+             instFlags[EffAddrValid] = true;
+@@ -904,6 +907,9 @@ BaseDynInst<Impl>::readMem(Addr addr, uint8_t *data,
+             }
+             fault = cpu->read(req, sreqLow, sreqHigh, data, lqIdx);
+         } else {
++	    printf("[%s:%s():%d] Fault!! req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
++	    	__FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
++
+             // Commit will have to clean up whatever happened.  Set this
+             // instruction as executed.
+             this->setExecuted();
+@@ -954,6 +960,9 @@ BaseDynInst<Impl>::writeMem(uint8_t *data, unsigned size,
+     }
+ 
+     if (fault == NoFault && translationCompleted()) {
++ 	 printf("[%s:%s:%d] NoFault, req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",
++ 	   	__FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
++
+         effAddr = req->getVaddr();
+         effSize = size;
+         instFlags[EffAddrValid] = true;
+@@ -965,6 +974,10 @@ BaseDynInst<Impl>::writeMem(uint8_t *data, unsigned size,
+             reqToVerify = new Request(*req);
+         }
+         fault = cpu->write(req, sreqLow, sreqHigh, data, sqIdx);
++    } else {
++	printf("[%s:%s:%d] Fault!! req->vaddr=%#lx, req->paddr=%#lx\n, req->size=%d\n",
++	 __FILE__,__func__,__LINE__,req->getVaddr(), req->getPaddr(), req->getSize());
++
+     }
+ 
+     return fault;
+diff --git a/src/cpu/checker/thread_context.hh b/src/cpu/checker/thread_context.hh
+index 967f155..4564609 100644
+--- a/src/cpu/checker/thread_context.hh
++++ b/src/cpu/checker/thread_context.hh
+@@ -125,7 +125,7 @@ class CheckerThreadContext : public ThreadContext
+     TheISA::Kernel::Statistics *getKernelStats()
+     { return actualTC->getKernelStats(); }
+ 
+-    Process *getProcessPtr() { return actualTC->getProcessPtr(); }
++    Process *getProcessPtr() { assert(actualTC); return actualTC->getProcessPtr(); }
+ 
+     PortProxy &getPhysProxy() { return actualTC->getPhysProxy(); }
+ 
+diff --git a/src/cpu/inorder/resources/cache_unit.cc b/src/cpu/inorder/resources/cache_unit.cc
+index e380c79..9d66a86 100644
+--- a/src/cpu/inorder/resources/cache_unit.cc
++++ b/src/cpu/inorder/resources/cache_unit.cc
+@@ -392,6 +392,43 @@ CacheUnit::doTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, int acc_size,
+     }
+ }
+ 
++//nonTLBAccess//smile
++void
++CacheUnit::nonTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, int acc_size,
++                        int flags, TheISA::TLB::Mode tlb_mode)
++{
++    ThreadID tid = inst->readTid();
++
++    setupMemRequest(inst, cache_req, acc_size, flags);
++
++    //@todo: HACK: the DTB expects the correct PC in the ThreadContext
++    //       but how if the memory accesses are speculative? Shouldn't
++    //       we send along the requestor's PC to the translate functions?
++    ThreadContext *tc = cpu->thread[tid]->getTC();
++    PCState old_pc = tc->pcState();
++    tc->pcState() = inst->pcState();
++    //for memory-side TLB
++    cache_req->memReq->setRegTLB_icm(tc->readMiscRegNoEffect(IPR_ICM));
++    cache_req->memReq->setRegTLB_dtb_asn(tc->readMiscRegNoEffect(IPR_DTB_ASN));
++    cache_req->memReq->setRegTLB_dtb_cm(tc->readMiscRegNoEffect(IPR_DTB_CM));
++    cache_req->memReq->setRegTLB_alt_mode(tc->readMiscRegNoEffect(IPR_ALT_MODE));
++    if (tlb_mode == TheISA::TLB::Execute){
++        cache_req->memReq->isExecute = true;
++    }
++    else {
++        cache_req->memReq->isExecute = false;
++        if (tlb_mode == TheISA::TLB::Write)
++            cache_req->memReq->isWrite = true;
++        else
++            cache_req->memReq->isWrite = false;
++  
++    }  
++    tc->pcState() = old_pc;
++  
++    inst->fault = NoFault;
++
++}
++
+ void
+ CacheUnit::trap(Fault fault, ThreadID tid, DynInstPtr inst)
+ {
+@@ -472,8 +509,15 @@ CacheUnit::read(DynInstPtr inst, Addr addr,
+         inst->split2ndDataPtr = inst->splitMemData + size;
+         inst->split2ndFlags = flags;        
+     }
+-    
+-    doTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Read);
++
++    DPRINTF(InOrderCachePort, "%i: sn[%i] mydebug address "
++                    "(%#x, %#x).\n", curTick(), inst->seqNum, addr, secondAddr);
++ 
++    //remove TLB access//smile
++    //doTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Read);
++    nonTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Read);
++    DPRINTF(InOrderCachePort, "%i: mydebug read fault %s.\n", curTick(), inst->fault);
++    //
+ 
+     if (inst->fault == NoFault) {
+         if (!cache_req->splitAccess) {            
+@@ -584,8 +628,12 @@ CacheUnit::write(DynInstPtr inst, uint8_t *data, unsigned size,
+         inst->splitInstSked = true;
+     }    
+         
+-    doTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Write);
+-
++    //remove TLB access/smile
++    //doTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Write);
++    nonTLBAccess(inst, cache_req, size, flags, TheISA::TLB::Write);
++    DPRINTF(InOrderCachePort, "%i: mydebug write fault %s.\n", curTick(), inst->fault);
++    //
++    
+     if (inst->fault == NoFault) {
+         if (!cache_req->splitAccess) {
+             cache_req->reqData = new uint8_t[size];
+@@ -812,6 +860,14 @@ CacheUnit::buildDataPacket(CacheRequest *cache_req)
+              : MemCmd::WriteReq);
+     }
+ 
++    //force Paddr->Vaddr//smile
++        DPRINTF(InOrderCachePort, "mydebug VA %x\n",
++            cache_req->memReq->getVaddr());
++            //cache_req->memReq->getPaddr());
++    Addr vaddr;
++    vaddr = cache_req->memReq->getVaddr();
++    cache_req->memReq->setPaddr(vaddr);
++    //
+     cache_req->dataPkt = new CacheReqPacket(cache_req,
+                                             cache_req->pktCmd,
+                                             cache_req->instIdx);
+@@ -819,6 +875,8 @@ CacheUnit::buildDataPacket(CacheRequest *cache_req)
+             cache_req->getSlot(),
+             cache_req->dataPkt->getAddr());
+ 
++    DPRINTF(InOrderCachePort, "mydebug for TLB register %x; TLB is execute %d\n",
++            cache_req->dataPkt->getRegTLB_dtb_asn(), cache_req->dataPkt->TLBisExecute());
+     cache_req->dataPkt->hasSlot = true;
+     cache_req->dataPkt->dataStatic(cache_req->reqData);
+ }
+@@ -833,6 +891,8 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
+ #endif
+     bool do_access = true;  // flag to suppress cache access
+ 
++    ThreadContext *tc = cpu->thread[tid]->getTC();
++
+     // Special Handling if this is a split request
+     CacheReqPtr cache_req;
+     if (split_req == NULL)
+@@ -846,6 +906,12 @@ CacheUnit::doCacheAccess(DynInstPtr inst, uint64_t *write_res,
+     assert(cache_req);
+     buildDataPacket(cache_req);
+ 
++    assert(tc);
++    cache_req->dataPkt->tc = tc;
++    PR("[%s:%d] cache_req->dataPkt: %p, TC: %p, pa: %#lx addr: %#lx\n",
++    	__func__, __LINE__, cache_req->dataPkt, cache_req->dataPkt->tc,
++	cache_req->dataPkt->getPaddr(), cache_req->dataPkt->getAddr());
++
+     // Special Handling for LL/SC or Compare/Swap
+      bool is_write = cache_req->dataPkt->isWrite();
+      RequestPtr mem_req = cache_req->dataPkt->req;
+diff --git a/src/cpu/inorder/resources/cache_unit.hh b/src/cpu/inorder/resources/cache_unit.hh
+index 9a7faf9..01ea737 100644
+--- a/src/cpu/inorder/resources/cache_unit.hh
++++ b/src/cpu/inorder/resources/cache_unit.hh
+@@ -126,6 +126,10 @@ class CacheUnit : public Resource
+     void doTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, int acc_size,
+                       int flags,  TheISA::TLB::Mode tlb_mode);
+ 
++    //add nonTLBAccess//smile
++    void nonTLBAccess(DynInstPtr inst, CacheReqPtr cache_req, int acc_size,
++                      int flags, TheISA::TLB::Mode tlb_mode);
++    //
+     /** Read/Write on behalf of an instruction.
+      *  curResSlot needs to be a valid value in instruction.
+      */
+diff --git a/src/cpu/inorder/resources/fetch_unit.cc b/src/cpu/inorder/resources/fetch_unit.cc
+index 0ed59fe..94972c1 100644
+--- a/src/cpu/inorder/resources/fetch_unit.cc
++++ b/src/cpu/inorder/resources/fetch_unit.cc
+@@ -157,6 +157,8 @@ FetchUnit::setupMemRequest(DynInstPtr inst, CacheReqPtr cache_req,
+             new Request(tid, aligned_addr, acc_size, flags,
+                         cpu->instMasterId(), inst->instAddr(), cpu->readCpuId(),
+                         tid);
++        DPRINTF(InOrderCachePort, "[sn:%i] mydebug aligned addr %x, request addr %x\n",
++                inst->seqNum, aligned_addr, inst->instAddr());
+         DPRINTF(InOrderCachePort, "[sn:%i] Created memReq @%x, ->%x\n",
+                 inst->seqNum, &cache_req->memReq, cache_req->memReq);
+     }
+@@ -317,7 +319,11 @@ FetchUnit::execute(int slot_num)
+                 return;
+             }
+ 
+-            doTLBAccess(inst, cache_req, cacheBlkSize, Request::INST_FETCH, TheISA::TLB::Execute);
++            //remove TLB access//smile
++            //doTLBAccess(inst, cache_req, cacheBlkSize, Request::INST_FETCH, TheISA::TLB::Execute);
++            nonTLBAccess(inst, cache_req, cacheBlkSize, Request::INST_FETCH, TheISA::TLB::Execute);
++            DPRINTF(InOrderCachePort, "%i: mydebug icache Fault %s.\n", curTick(), inst->fault);
++            //
+ 
+             if (inst->fault == NoFault) {
+                 DPRINTF(InOrderCachePort,
+@@ -334,6 +340,7 @@ FetchUnit::execute(int slot_num)
+                 if (cache_req->isMemAccPending()) {
+                     pendingFetch.push_back(new FetchBlock(asid, block_addr));
+ 
++            DPRINTF(InOrderCachePort, "%i: mydebug icache ------.\n", curTick());
+                     // mark replacement block
+                 }
+             }
+diff --git a/src/cpu/inorder/thread_context.hh b/src/cpu/inorder/thread_context.hh
+index 2dd5558..d819268 100644
+--- a/src/cpu/inorder/thread_context.hh
++++ b/src/cpu/inorder/thread_context.hh
+@@ -154,7 +154,10 @@ class InOrderThreadContext : public ThreadContext
+     SETranslatingPortProxy &getMemProxy() { return thread->getMemProxy(); }
+ 
+     /** Returns a pointer to this thread's process. */
+-    Process *getProcessPtr() { return thread->getProcessPtr(); }
++    Process *getProcessPtr() {
++    	assert(thread);
++	return thread->getProcessPtr();
++    }
+ 
+     /** Returns this thread's status. */
+     Status status() const { return thread->status(); }
+diff --git a/src/cpu/o3/fetch_impl.hh b/src/cpu/o3/fetch_impl.hh
+index 33563f5..0bb1780 100644
+--- a/src/cpu/o3/fetch_impl.hh
++++ b/src/cpu/o3/fetch_impl.hh
+@@ -569,6 +569,9 @@ DefaultFetch<Impl>::fetchCacheLine(Addr vaddr, ThreadID tid, Addr pc)
+         new Request(tid, block_PC, cacheBlkSize, Request::INST_FETCH,
+                     cpu->instMasterId(), pc, cpu->thread[tid]->contextId(), tid);
+ 
++    mem_req->isExecute = true;
++    mem_req->setPaddr(block_PC);
++
+     memReq[tid] = mem_req;
+ 
+     // Initiate translation of the icache block
+@@ -604,25 +607,36 @@ DefaultFetch<Impl>::finishTranslation(Fault fault, RequestPtr mem_req)
+         // Check that we're not going off into random memory
+         // If we have, just wait around for commit to squash something and put
+         // us on the right track
+-        if (!cpu->system->isMemAddr(mem_req->getPaddr())) {
+-            warn("Address %#x is outside of physical memory, stopping fetch\n",
+-                    mem_req->getPaddr());
+-            fetchStatus[tid] = NoGoodAddr;
+-            delete mem_req;
+-            memReq[tid] = NULL;
+-            return;
+-        }
++        //if (!cpu->system->isMemAddr(mem_req->getPaddr())) {
++        //    warn("Address %#x is outside of physical memory, stopping fetch\n",
++        //            mem_req->getPaddr());
++        //    fetchStatus[tid] = NoGoodAddr;
++        //    delete mem_req;
++        //    memReq[tid] = NULL;
++        //    return;
++        //}
+ 
+         // Build packet here.
+         PacketPtr data_pkt = new Packet(mem_req, MemCmd::ReadReq);
+         data_pkt->dataDynamicArray(new uint8_t[cacheBlkSize]);
+ 
++	data_pkt->tc = cpu->thread[tid]->getTC();
++	data_pkt->setAddr(mem_req->getVaddr());
++	data_pkt->setPaddr(mem_req->getVaddr());
++	data_pkt->_TLBisExecute = true;
++
++        assert(data_pkt->tc);
++	assert(data_pkt->getAddr());
++
+         cacheDataPC[tid] = block_PC;
+         cacheDataValid[tid] = false;
+         DPRINTF(Fetch, "Fetch: Doing instruction read.\n");
+ 
+         fetchedCacheLines++;
+ 
++	DPRINTF(Fetch, "[%s:%d] pkt: %p, addr: %#lx \n",
++		__func__,__LINE__, data_pkt, data_pkt->getAddr());
++
+         // Access the cache.
+         if (!cpu->getInstPort().sendTimingReq(data_pkt)) {
+             assert(retryPkt == NULL);
+diff --git a/src/cpu/o3/lsq_unit.hh b/src/cpu/o3/lsq_unit.hh
+index 8eb33c2..9c88599 100644
+--- a/src/cpu/o3/lsq_unit.hh
++++ b/src/cpu/o3/lsq_unit.hh
+@@ -552,8 +552,16 @@ Fault
+ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
+                     uint8_t *data, int load_idx)
+ {
++    ThreadID tid = req->threadId();
++    ThreadContext *tc = cpu->thread[tid]->getTC();
+     DynInstPtr load_inst = loadQueue[load_idx];
+ 
++    req->setPaddr(req->getVaddr());
++    req->isExecute = false;
++
++    printf("[%s:%s:%d] req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
++    	__FILE__,__func__,__LINE__,req->getVaddr(),req->getPaddr(),req->getSize());
++
+     assert(load_inst);
+ 
+     assert(!load_inst->isExecuted());
+@@ -588,9 +596,9 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
+     int store_size = 0;
+ 
+     DPRINTF(LSQUnit, "Read called, load idx: %i, store idx: %i, "
+-            "storeHead: %i addr: %#x%s\n",
++            "storeHead: %i addr: %#x%s size:%d \n",
+             load_idx, store_idx, storeHead, req->getPaddr(),
+-            sreqLow ? " split" : "");
++            sreqLow ? " split" : "", req->getSize());
+ 
+     if (req->isLLSC()) {
+         assert(!sreqLow);
+@@ -609,6 +617,9 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
+         ThreadContext *thread = cpu->tcBase(lsqID);
+         Cycles delay(0);
+         PacketPtr data_pkt = new Packet(req, MemCmd::ReadReq);
++	//data_pkt->setAddr(req->getVaddr());
++	//data_pkt->setSize(req->getSize());
++	//data_pkt->tc = tc;
+ 
+         if (!TheISA::HasUnalignedMemAcc || !sreqLow) {
+             data_pkt->dataStatic(load_inst->memData);
+@@ -691,6 +702,9 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
+ 
+             PacketPtr data_pkt = new Packet(req, MemCmd::ReadReq);
+             data_pkt->dataStatic(load_inst->memData);
++	   // data_pkt->setAddr(req->getVaddr());
++	   // data_pkt->tc = tc;
++	   // data_pkt->setSize(req->getSize());
+ 
+             WritebackEvent *wb = new WritebackEvent(load_inst, data_pkt, this);
+ 
+@@ -758,8 +772,8 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
+     }
+ 
+     // If there's no forwarding case, then go access memory
+-    DPRINTF(LSQUnit, "Doing memory access for inst [sn:%lli] PC %s\n",
+-            load_inst->seqNum, load_inst->pcState());
++    DPRINTF(LSQUnit, "Doing memory access for inst [sn:%lli] PC %s, req->vaddr=%#lx\n",
++            load_inst->seqNum, load_inst->pcState(), req->getVaddr());
+ 
+     assert(!load_inst->memData);
+     load_inst->memData = new uint8_t[64];
+@@ -771,7 +785,12 @@ LSQUnit<Impl>::read(Request *req, Request *sreqLow, Request *sreqHigh,
+     if (!lsq->cacheBlocked()) {
+         MemCmd command =
+             req->isLLSC() ? MemCmd::LoadLockedReq : MemCmd::ReadReq;
++
+         PacketPtr data_pkt = new Packet(req, command);
++	//data_pkt->setAddr(req->getVaddr());
++	data_pkt->tc = tc;
++	//data_pkt->setSize(req->getSize());
++
+         PacketPtr fst_data_pkt = NULL;
+         PacketPtr snd_data_pkt = NULL;
+ 
+@@ -889,6 +908,12 @@ Fault
+ LSQUnit<Impl>::write(Request *req, Request *sreqLow, Request *sreqHigh,
+                      uint8_t *data, int store_idx)
+ {
++    req->setPaddr(req->getVaddr());
++    req->isExecute = false;
++    printf("[%s:%s:%d] req->vaddr=%#lx, req->paddr=%#lx, req->size=%d\n",
++    	__FILE__,__func__,__LINE__,req->getVaddr(),req->getPaddr(),req->getSize());
++
++
+     assert(storeQueue[store_idx].inst);
+ 
+     DPRINTF(LSQUnit, "Doing write to store idx %i, addr %#x data %#x"
+diff --git a/src/cpu/o3/lsq_unit_impl.hh b/src/cpu/o3/lsq_unit_impl.hh
+index 7c98b99..750bf90 100644
+--- a/src/cpu/o3/lsq_unit_impl.hh
++++ b/src/cpu/o3/lsq_unit_impl.hh
+@@ -800,6 +800,9 @@ LSQUnit<Impl>::writebackStores()
+         RequestPtr sreqLow = storeQueue[storeWBIdx].sreqLow;
+         RequestPtr sreqHigh = storeQueue[storeWBIdx].sreqHigh;
+ 
++   	ThreadID tid = req->threadId();
++   	ThreadContext *tc = cpu->thread[tid]->getTC();
++
+         storeQueue[storeWBIdx].committed = true;
+ 
+         assert(!inst->memData);
+@@ -822,6 +825,10 @@ LSQUnit<Impl>::writebackStores()
+ 
+             // Build a single data packet if the store isn't split.
+             data_pkt = new Packet(req, command);
++	    //data_pkt->setSize(req->getSize());
++	    data_pkt->tc = tc;
++	    data_pkt->_TLBisExecute = false;
++	    //data_pkt->setAddr(req->getVaddr());
+             data_pkt->dataStatic(inst->memData);
+             data_pkt->senderState = state;
+         } else {
+diff --git a/src/cpu/o3/thread_context.hh b/src/cpu/o3/thread_context.hh
+index 520f07b..84d4d03 100755
+--- a/src/cpu/o3/thread_context.hh
++++ b/src/cpu/o3/thread_context.hh
+@@ -113,7 +113,7 @@ class O3ThreadContext : public ThreadContext
+     { return thread->kernelStats; }
+ 
+     /** Returns a pointer to this thread's process. */
+-    virtual Process *getProcessPtr() { return thread->getProcessPtr(); }
++    virtual Process *getProcessPtr() { assert(thread); return thread->getProcessPtr(); }
+ 
+     virtual PortProxy &getPhysProxy() { return thread->getPhysProxy(); }
+ 
+diff --git a/src/cpu/ozone/cpu.hh b/src/cpu/ozone/cpu.hh
+index 91de37e..c477a9b 100644
+--- a/src/cpu/ozone/cpu.hh
++++ b/src/cpu/ozone/cpu.hh
+@@ -109,7 +109,7 @@ class OzoneCPU : public BaseCPU
+         TheISA::Kernel::Statistics *getKernelStats()
+         { return thread->getKernelStats(); }
+ 
+-        Process *getProcessPtr() { return thread->getProcessPtr(); }
++        Process *getProcessPtr() { assert(thread); return thread->getProcessPtr(); }
+ 
+         PortProxy &getPhysProxy() { return thread->getPhysProxy(); }
+ 
+diff --git a/src/cpu/thread_context.hh b/src/cpu/thread_context.hh
+index e16bc3b..16ae550 100644
+--- a/src/cpu/thread_context.hh
++++ b/src/cpu/thread_context.hh
+@@ -321,7 +321,7 @@ class ProxyThreadContext : public ThreadContext
+ 
+     SETranslatingPortProxy &getMemProxy() { return actualTC->getMemProxy(); }
+ 
+-    Process *getProcessPtr() { return actualTC->getProcessPtr(); }
++    Process *getProcessPtr() { assert(actualTC); return actualTC->getProcessPtr(); }
+ 
+     Status status() const { return actualTC->status(); }
+ 
+diff --git a/src/mem/Bus.py b/src/mem/Bus.py
+index 447fc72..58fdc26 100644
+--- a/src/mem/Bus.py
++++ b/src/mem/Bus.py
+@@ -41,6 +41,14 @@
+ 
+ from MemObject import MemObject
+ from m5.params import *
++from m5.defines import buildEnv
++
++from BaseTLB import BaseTLB
++
++# TLB move to memory-side//
++if buildEnv['TARGET_ISA'] == 'alpha':
++    from AlphaTLB import AlphaDTB, AlphaITB
++    from AlphaInterrupts import AlphaInterrupts
+ 
+ class BaseBus(MemObject):
+     type = 'BaseBus'
+@@ -66,8 +74,16 @@ class BaseBus(MemObject):
+     use_default_range = Param.Bool(False, "Perform address mapping for " \
+                                        "the default port")
+ 
++    #TLB move to memory-side//
++    if buildEnv['TARGET_ISA'] == 'alpha':
++            dtb = Param.AlphaTLB(AlphaDTB(), "Data TLB")
++	    itb = Param.AlphaTLB(AlphaITB(), "Instruction TLB")
++            interrupts = Param.AlphaInterrupts(
++	            NULL, "Interrupt Controller")
++
+ class NoncoherentBus(BaseBus):
+     type = 'NoncoherentBus'
+ 
+ class CoherentBus(BaseBus):
+     type = 'CoherentBus'
++    CacheBus = Param.Bool(False, "This bus is used as cross-cache bar")
+diff --git a/src/mem/abstract_mem.cc b/src/mem/abstract_mem.cc
+index 4d34bec..0d44052 100644
+--- a/src/mem/abstract_mem.cc
++++ b/src/mem/abstract_mem.cc
+@@ -333,16 +333,16 @@ AbstractMemory::checkLockedAddrList(PacketPtr pkt)
+ void
+ AbstractMemory::access(PacketPtr pkt)
+ {
+-    assert(pkt->getAddr() >= range.start &&
+-           (pkt->getAddr() + pkt->getSize() - 1) <= range.end);
++    assert(pkt->getPaddr() >= range.start &&
++           (pkt->getPaddr() + pkt->getSize() - 1) <= range.end);
+ 
+     if (pkt->memInhibitAsserted()) {
+         DPRINTF(MemoryAccess, "mem inhibited on 0x%x: not responding\n",
+-                pkt->getAddr());
++                pkt->getPaddr());
+         return;
+     }
+ 
+-    uint8_t *hostAddr = pmemAddr + pkt->getAddr() - range.start;
++    uint8_t *hostAddr = pmemAddr + pkt->getPaddr() - range.start;
+ 
+     if (pkt->cmd == MemCmd::SwapReq) {
+         TheISA::IntReg overwrite_val;
+diff --git a/src/mem/cache/cache_impl.hh b/src/mem/cache/cache_impl.hh
+index a22003c..0f8dc56 100644
+--- a/src/mem/cache/cache_impl.hh
++++ b/src/mem/cache/cache_impl.hh
+@@ -143,6 +143,9 @@ Cache<TagStore>::satisfyCpuSideRequest(PacketPtr pkt, BlkType *blk,
+     // Read requester(s) to have buffered the ReadEx snoop and to
+     // invalidate their blocks after receiving them.
+     // assert(!pkt->needsExclusive() || blk->isWritable());
++       DPRINTF(Cache, "blkSize %x \n", blkSize);
++       DPRINTF(Cache, "getOffset %x \n", pkt->getOffset(blkSize));
++       DPRINTF(Cache, "getSize %d \n", pkt->getSize());
+     assert(pkt->getOffset(blkSize) + pkt->getSize() <= blkSize);
+ 
+     // Check RMW operations first since both isRead() and
+@@ -224,7 +227,6 @@ Cache<TagStore>::satisfyCpuSideRequest(PacketPtr pkt, BlkType *blk,
+ //
+ /////////////////////////////////////////////////////
+ 
+-
+ template<class TagStore>
+ void
+ Cache<TagStore>::markInService(MSHR *mshr, PacketPtr pkt)
+@@ -496,6 +498,10 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
+ 
+     bool needsResponse = pkt->needsResponse();
+ 
++    DPRINTF(Cache, "satisfied is %s\n",
++                        satisfied);
++    DPRINTF(Cache, "needsResponse is %s\n",
++                        needsResponse);
+     if (satisfied) {
+         if (prefetcher && (prefetchOnAccess || (blk && blk->wasPrefetched()))) {
+             if (blk)
+@@ -519,6 +525,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
+         MSHR *mshr = mshrQueue.findMatch(blk_addr);
+ 
+         if (mshr) {
++            DPRINTF(Cache, "mshr hit\n");
+             // MSHR hit
+             //@todo remove hw_pf here
+             assert(pkt->req->masterId() < system->maxMasters());
+@@ -536,6 +543,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
+                 // mshrQueue.moveToFront(mshr);
+             }
+         } else {
++            DPRINTF(Cache, "no mshr\n");
+             // no MSHR
+             assert(pkt->req->masterId() < system->maxMasters());
+             mshr_misses[pkt->cmdToIndex()][pkt->req->masterId()]++;
+@@ -543,9 +551,11 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
+             // no-write-allocate or bypass accesses this will have to
+             // be changed.
+             if (pkt->cmd == MemCmd::Writeback) {
++            DPRINTF(Cache, "Writeback\n");
+                 allocateWriteBuffer(pkt, time, true);
+             } else {
+                 if (blk && blk->isValid()) {
++                    DPRINTF(Cache, "blk is valid\n");
+                     // If we have a write miss to a valid block, we
+                     // need to mark the block non-readable.  Otherwise
+                     // if we allow reads while there's an outstanding
+@@ -566,6 +576,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
+                 }
+ 
+                 allocateMissBuffer(pkt, time, true);
++                    DPRINTF(Cache, "allocate miss buffer\n");
+             }
+ 
+             if (prefetcher) {
+@@ -584,6 +595,7 @@ Cache<TagStore>::timingAccess(PacketPtr pkt)
+         writebacks.pop_front();
+     }
+ 
++    DPRINTF(Cache, "timing access end\n");
+     return true;
+ }
+ 
+@@ -832,7 +844,8 @@ Cache<TagStore>::handleResponse(PacketPtr pkt)
+                 "cmd: %s\n", pkt->getAddr(), pkt->cmdString());
+     }
+ 
+-    DPRINTF(Cache, "Handling response to %x\n", pkt->getAddr());
++    DPRINTF(Cache, "[%s:%d] Handling response to %x\n",
++    	__func__, __LINE__, pkt->getAddr());
+ 
+     MSHRQueue *mq = mshr->queue;
+     bool wasFull = mq->isFull();
+@@ -1362,6 +1375,7 @@ Cache<TagStore>::CpuSidePort::recvTimingSnoopResp(PacketPtr pkt)
+ {
+     // Express snoop responses from master to slave, e.g., from L1 to L2
+     cache->timingAccess(pkt);
++    DPRINTF(Cache, "CpuSidePort snoop resp\n");
+     return true;
+ }
+ 
+@@ -1476,9 +1490,17 @@ Cache<TagStore>::getTimingPacket()
+         return NULL;
+     }
+ 
++    PacketPtr pkt = NULL;
++
+     // use request from 1st target
+     PacketPtr tgt_pkt = mshr->getTarget()->pkt;
+-    PacketPtr pkt = NULL;
++
++    DPRINTF(Cache, "[%s:%d] pkt: %p, tc: %p, pa: %#lx va: %#lx size: %d, TLBisExecute: %s\n",
++       __func__, __LINE__,
++       tgt_pkt, tgt_pkt->tc, tgt_pkt->getPaddr(), tgt_pkt->getAddr(), tgt_pkt->getSize(),
++       tgt_pkt->TLBisExecute()? "true" : "false");
++
++    assert(tgt_pkt->getAddr());
+ 
+     if (tgt_pkt->cmd == MemCmd::SCUpgradeFailReq ||
+         tgt_pkt->cmd == MemCmd::StoreCondFailReq) {
+@@ -1486,6 +1508,8 @@ Cache<TagStore>::getTimingPacket()
+         // in MSHR, so now that we are getting around to processing
+         // it, just treat it as if we got a failure response
+         pkt = new Packet(tgt_pkt);
++	pkt->tc = tgt_pkt->tc;
++	pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
+         pkt->cmd = MemCmd::UpgradeFailResp;
+         pkt->senderState = mshr;
+         pkt->firstWordTime = pkt->finishTime = curTick();
+@@ -1510,6 +1534,8 @@ Cache<TagStore>::getTimingPacket()
+             // check we could get a stale copy from memory  that might get used
+             // in place of the dirty one.
+             PacketPtr snoop_pkt = new Packet(tgt_pkt, true);
++	    snoop_pkt->tc = tgt_pkt->tc;
++	    snoop_pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
+             snoop_pkt->setExpressSnoop();
+             snoop_pkt->senderState = mshr;
+             cpuSidePort->sendTimingSnoopReq(snoop_pkt);
+@@ -1525,6 +1551,8 @@ Cache<TagStore>::getTimingPacket()
+         }
+ 
+         pkt = getBusPacket(tgt_pkt, blk, mshr->needsExclusive());
++	pkt->tc = tgt_pkt->tc;
++	pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
+ 
+         mshr->isForward = (pkt == NULL);
+ 
+@@ -1533,6 +1561,8 @@ Cache<TagStore>::getTimingPacket()
+             // make copy of current packet to forward, keep current
+             // copy for response handling
+             pkt = new Packet(tgt_pkt);
++	    pkt->tc = tgt_pkt->tc;
++	    pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
+             pkt->allocate();
+             if (pkt->isWrite()) {
+                 pkt->setData(tgt_pkt->getPtr<uint8_t>());
+@@ -1542,6 +1572,7 @@ Cache<TagStore>::getTimingPacket()
+ 
+     assert(pkt != NULL);
+     pkt->senderState = mshr;
++    pkt->_TLBisExecute = tgt_pkt->_TLBisExecute;
+     return pkt;
+ }
+ 
+@@ -1616,6 +1647,9 @@ Cache<TagStore>::CpuSidePort::recvTimingReq(PacketPtr pkt)
+     }
+ 
+     cache->timingAccess(pkt);
++    DPRINTF(Cache, "CpuSidePort timing req\n");
++    DPRINTF(Cache, "recvTimingReq: Address is 0x%x\n",
++            pkt->getAddr());
+     return true;
+ }
+ 
+diff --git a/src/mem/cache/tags/lru.cc b/src/mem/cache/tags/lru.cc
+index 8d32d4b..c18a7fe 100644
+--- a/src/mem/cache/tags/lru.cc
++++ b/src/mem/cache/tags/lru.cc
+@@ -78,6 +78,9 @@ LRU::LRU(unsigned _numSets, unsigned _blkSize, unsigned _assoc,
+     numBlocks = numSets * assoc;
+     dataBlks = new uint8_t[numBlocks * blkSize];
+ 
++    printf("[%s():%d] blkSize=%d numSets=%d assoc=%d hitLatency=%d\n",
++    	__func__, __LINE__, blkSize, numSets, assoc, hitLatency);
++
+     unsigned blkIndex = 0;       // index into blks array
+     for (unsigned i = 0; i < numSets; ++i) {
+         sets[i].assoc = assoc;
+diff --git a/src/mem/coherent_bus.cc b/src/mem/coherent_bus.cc
+index b0dedfa..d2f5bb2 100644
+--- a/src/mem/coherent_bus.cc
++++ b/src/mem/coherent_bus.cc
+@@ -52,12 +52,26 @@
+ #include "debug/BusAddrRanges.hh"
+ #include "debug/CoherentBus.hh"
+ #include "mem/coherent_bus.hh"
++#include "cpu/thread_context.hh"
+ 
++using namespace std;
++using namespace TheISA;
++using namespace ThePipeline;
+ CoherentBus::CoherentBus(const CoherentBusParams *p)
+     : BaseBus(p), reqLayer(*this, ".reqLayer", p->clock),
+       respLayer(*this, ".respLayer", p->clock),
+       snoopRespLayer(*this, ".snoopRespLayer", p->clock)
+ {
++   /*
++    * Memory-Side TLB
++    */
++   CacheBus = p->CacheBus;
++   itb = p->itb;
++   dtb = p->dtb;
++
++   printf("[%s:%s:%d] itb=%p dtb=%p CacheBus=%s \n",
++   	__FILE__,__func__,__LINE__, itb, dtb, CacheBus?"true":"false");
++
+     // create the ports based on the size of the master and slave
+     // vector ports, and the presence of the default port, the ports
+     // are enumerated starting from zero
+@@ -106,9 +120,124 @@ CoherentBus::init()
+         warn("CoherentBus %s has no snooping ports attached!\n", name());
+ }
+ 
++void CoherentBus::ItbPageFault_post(PacketPtr pkt, ThreadContext *tc)
++{
++    assert(tc);
++
++    VAddr vaddr = VAddr(pkt->getAddr());
++    Process *p = tc->getProcessPtr();
++    TlbEntry entry;
++
++    /* Maybe other faults */
++    assert(p);
++    if (!p->pTable)
++    	return;
++
++    bool success = p->pTable->lookup(vaddr.addr, entry);
++
++    if (!success) {
++        panic("Tried to execute unmapped address %#x.\n", vaddr.addr);
++    } else {
++        VAddr vaddr(pkt->getAddr());
++        itb->insert(vaddr.addr, entry);
++
++	DPRINTF(CoherentBus, "[%s:%d] itb: %p setPaddr: %#lx\n",
++		__func__, __LINE__, itb, (entry.ppn << PageShift) +(vaddr.offset() & ~3));
++
++        pkt->setPaddr((entry.ppn << PageShift) +
++                      (vaddr.offset() & ~3));
++    }
++}
++
++void CoherentBus::NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc)
++{
++    assert(tc);
++
++    VAddr vaddr = VAddr(pkt->getAddr());
++    Process *p = tc->getProcessPtr();
++    TlbEntry entry;
++
++    /* Maybe other faults */
++    assert(p);
++    if (!p->pTable)
++    	return;
++
++    bool success = p->pTable->lookup(vaddr.addr, entry);
++    if (!success) {
++        if (p->fixupStackFault(vaddr))
++            success = p->pTable->lookup(vaddr, entry);
++    }
++
++    if (!success) {
++        panic("Tried to access unmapped address %#x.\n", (Addr)vaddr);
++    } else {
++        VAddr vaddr(pkt->getAddr());
++        dtb->insert(vaddr.addr, entry);
++
++	DPRINTF(CoherentBus, "[%s:%d] dtb:%p setPaddr: %#lx\n",
++		__func__, __LINE__, dtb, (entry.ppn << PageShift) +(vaddr.offset()));
++
++        pkt->setPaddr((entry.ppn << PageShift) +
++                      (vaddr.offset()));
++    }
++}
++
++void
++CoherentBus::doTLBAccess(PacketPtr pkt)
++{
++    Fault fault;
++
++    if (pkt->TLBisExecute())
++    	fault = itb->translateAtomic_post(pkt);
++    else
++    	fault = dtb->translateAtomic_post(pkt);
++
++    if (fault == NoFault)
++    	return;
++
++    if (pkt->TLBisExecute()) {
++        ItbPageFault_post(pkt, pkt->tc);
++    } else {
++        NDtbMissFault_post(pkt, pkt->tc);
++    }
++}
++
++static ThreadContext *saved_tc;
++
+ bool
+ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
+ {
++
++  /*
++   * Do nothing if it is a cross-cache bar, since all caches
++   * are virtual cache.
++   *
++   * Otherwise it is a membus that connects to physical memory,
++   * then we need to go through TLB
++   */
++  if (!CacheBus) {
++    if (pkt->tc) {
++        DPRINTF(CoherentBus, "[%s:%d] Need to do TLB access, tc=%p, VA: %#lx\n",
++		__func__, __LINE__, pkt->tc, pkt->getAddr());
++	doTLBAccess(pkt);
++	saved_tc = pkt->tc;
++    } else {
++        DPRINTF(CoherentBus, "[%s:%d] No TC, used saved TC PA: %#lx VA: %#lx; isInst: %d, isWrite: %d\n",
++		__func__, __LINE__, pkt->getPaddr(), pkt->getAddr(), pkt->TLBisExecute(),
++		pkt->TLBisWrite());
++
++	/*
++	 * A package issued by cache directly. Could be
++	 * replacement or writeback packages. Since now
++	 * we only have one tc, hence using the saved one.
++	 */
++	pkt->tc = saved_tc;
++	doTLBAccess(pkt);
++    }
++    DPRINTF(CoherentBus, "[%s:%d] After doTLBAccess, PA:%#lx\n",
++    	__func__, __LINE__,pkt->getPaddr());
++ }
++
+     // determine the source port based on the id
+     SlavePort *src_port = slavePorts[slave_port_id];
+ 
+@@ -125,7 +254,7 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
+ 
+     DPRINTF(CoherentBus, "recvTimingReq: src %s %s expr %d 0x%x\n",
+             src_port->name(), pkt->cmdString(), is_express_snoop,
+-            pkt->getAddr());
++            pkt->getPaddr());
+ 
+     // set the source port for routing of the response
+     pkt->setSrc(slave_port_id);
+@@ -158,7 +287,11 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
+ 
+     // since it is a normal request, determine the destination
+     // based on the address and attempt to send the packet
+-    bool success = masterPorts[findPort(pkt->getAddr())]->sendTimingReq(pkt);
++    bool success;
++    if (CacheBus)
++        success = masterPorts[findPort(pkt->getAddr())]->sendTimingReq(pkt);
++    else
++        success = masterPorts[findPort(pkt->getPaddr())]->sendTimingReq(pkt);
+ 
+     // if this is an express snoop, we are done at this point
+     if (is_express_snoop) {
+@@ -175,7 +308,7 @@ CoherentBus::recvTimingReq(PacketPtr pkt, PortID slave_port_id)
+                 outstandingReq.erase(pkt->req);
+ 
+             DPRINTF(CoherentBus, "recvTimingReq: src %s %s 0x%x RETRY\n",
+-                    src_port->name(), pkt->cmdString(), pkt->getAddr());
++                    src_port->name(), pkt->cmdString(), pkt->getPaddr());
+ 
+             // update the bus state and schedule an idle event
+             reqLayer.failedTiming(src_port, headerFinishTime);
+diff --git a/src/mem/coherent_bus.hh b/src/mem/coherent_bus.hh
+index 8941d02..faaacbd 100644
+--- a/src/mem/coherent_bus.hh
++++ b/src/mem/coherent_bus.hh
+@@ -54,6 +54,17 @@
+ #include "mem/bus.hh"
+ #include "params/CoherentBus.hh"
+ 
++#include "arch/tlb.hh"
++#include "base/hashmap.hh"
++#include "config/the_isa.hh"
++#include "cpu/inorder/inorder_dyn_inst.hh"
++#include "cpu/inorder/pipeline_traits.hh"
++#include "cpu/inorder/resource.hh"
++#include "mem/packet.hh"
++#include "mem/packet_access.hh"
++#include "mem/port.hh"
++#include "params/InOrderCPU.hh"
++#include "sim/sim_object.hh"
+ /**
+  * A coherent bus connects a number of (potentially) snooping masters
+  * and slaves, and routes the request and response packets based on
+@@ -67,6 +78,19 @@
+  */
+ class CoherentBus : public BaseBus
+ {
++  private:
++    void trap(PacketPtr pkt, ThreadContext *tc);
++    void doTLBAccess(PacketPtr pkt);
++    void ItbPageFault_post(PacketPtr pkt, ThreadContext *tc);
++    void NDtbMissFault_post(PacketPtr pkt, ThreadContext *tc);
++    bool tlbBlocked[ThePipeline::MaxThreads];
++    InstSeqNum tlbBlockSeqNum[ThePipeline::MaxThreads];
++ 
++    TheISA::TLB* tlb();
++    TheISA::TLB *itb;
++    TheISA::TLB *dtb;
++
++    bool CacheBus;
+ 
+   protected:
+ 
+diff --git a/src/mem/packet.hh b/src/mem/packet.hh
+index fbcf185..79062ba 100644
+--- a/src/mem/packet.hh
++++ b/src/mem/packet.hh
+@@ -65,6 +65,7 @@
+ #include "mem/request.hh"
+ #include "sim/core.hh"
+ 
++class ThreadContext;
+ class Packet;
+ typedef Packet *PacketPtr;
+ typedef uint8_t* PacketDataPtr;
+@@ -264,6 +265,76 @@ class Packet : public Printable
+     Flags flags;
+ 
+   public:
++    typedef uint32_t ReqFlagsType;
++    typedef ::Flags<ReqFlagsType> ReqFlags;
++
++    /** ASI information for this request if it exists. */
++    static const ReqFlagsType ASI_BITS                    = 0x000000FF;
++    /** The request was an instruction fetch. */
++    static const ReqFlagsType INST_FETCH                  = 0x00000100;
++    /** The virtual address is also the physical address. */
++    static const ReqFlagsType PHYSICAL                    = 0x00000200;
++    /** The request is an ALPHA VPTE pal access (hw_ld). */
++    static const ReqFlagsType VPTE                        = 0x00000400;
++    /** Use the alternate mode bits in ALPHA. */
++    static const ReqFlagsType ALTMODE                     = 0x00000800;
++    /** The request is to an uncacheable address. */
++    static const ReqFlagsType UNCACHEABLE                 = 0x00001000;
++    /** This request is to a memory mapped register. */
++    static const ReqFlagsType MMAPPED_IPR                  = 0x00002000;
++    /** This request is a clear exclusive. */
++    static const ReqFlagsType CLEAR_LL                    = 0x00004000;
++
++    /** The request should not cause a memory access. */
++    static const ReqFlagsType NO_ACCESS                   = 0x00080000;
++    /** This request will lock or unlock the accessed memory. When used with
++     * a load, the access locks the particular chunk of memory. When used
++     * with a store, it unlocks. The rule is that locked accesses have to be
++     * made up of a locked load, some operation on the data, and then a locked
++     * store.
++     */
++    static const ReqFlagsType LOCKED                      = 0x00100000;
++    /** The request is a Load locked/store conditional. */
++    static const ReqFlagsType LLSC                        = 0x00200000;
++    /** This request is for a memory swap. */
++    static const ReqFlagsType MEM_SWAP                    = 0x00400000;
++    static const ReqFlagsType MEM_SWAP_COND               = 0x00800000;
++
++    /** The request is a prefetch. */
++    static const ReqFlagsType PREFETCH                    = 0x01000000;
++    /** The request should be prefetched into the exclusive state. */
++    static const ReqFlagsType PF_EXCLUSIVE                = 0x02000000;
++    /** The request should be marked as LRU. */
++    static const ReqFlagsType EVICT_NEXT                  = 0x04000000;
++
++    /** These flags are *not* cleared when a Request object is reused
++       (assigned a new address). */
++    static const ReqFlagsType STICKY_FLAGS = INST_FETCH;
++
++  private:
++    /** Flag structure for the request. */
++    ReqFlags _reqflags;
++
++  public:
++    /** Accessor for flags. */
++    ReqFlags
++    getReqFlags()
++    {
++        return _reqflags;
++    }
++
++    /** Note that unlike other accessors, this function sets *specific
++       flags* (ORs them in); it does not assign its argument to the
++       _flags field.  Thus this method should rightly be called
++       setFlags() and not just flags(). */
++    void
++    setReqFlags(ReqFlags reqflags)
++    {
++        _reqflags.set(reqflags);
++    }
++
++
++  public:
+     typedef MemCmd::Command Command;
+ 
+     /// The command field of the packet.
+@@ -272,6 +343,14 @@ class Packet : public Printable
+     /// A pointer to the original request.
+     RequestPtr req;
+ 
++    //for memory-side TLB//smile
++    uint64_t reg_ipr_icm;
++    uint64_t reg_ipr_dtb_asn;
++    uint64_t reg_ipr_dtb_cm;
++    uint64_t reg_ipr_alt_mode;
++    bool _TLBisExecute;
++    bool _TLBisWrite;
++    ThreadContext *tc;
+   private:
+    /**
+     * A pointer to the data being transfered.  It can be differnt
+@@ -285,6 +364,7 @@ class Packet : public Printable
+     /// The address of the request.  This address could be virtual or
+     /// physical, depending on the system configuration.
+     Addr addr;
++    Addr paddr;//memory physical address//smile
+ 
+     /// The size of the request or transfer.
+     unsigned size;
+@@ -490,7 +570,8 @@ class Packet : public Printable
+     /// Reset destination field, e.g. to turn a response into a request again.
+     void clearDest() { dest = InvalidPortID; }
+ 
+-    Addr getAddr() const { assert(flags.isSet(VALID_ADDR)); return addr; }
++    Addr getAddr() const {  return addr; }
++    Addr getPaddr() const { return paddr; }//memory physical address//smile
+     /**
+      * Update the address of this packet mid-transaction. This is used
+      * by the address mapper to change an already set address to a new
+@@ -498,7 +579,15 @@ class Packet : public Printable
+      * an existing address, so it asserts that the current address is
+      * valid.
+      */
+-    void setAddr(Addr _addr) { assert(flags.isSet(VALID_ADDR)); addr = _addr; }
++    void setAddr(Addr _addr) {  addr = _addr; }
++    //for memory-side TLB//smile
++    void setPaddr(Addr _paddr) { paddr = _paddr; }
++    uint64_t getRegTLB_icm() { return reg_ipr_icm; }
++    uint64_t getRegTLB_dtb_asn() { return reg_ipr_dtb_asn; }
++    uint64_t getRegTLB_dtb_cm() { return reg_ipr_dtb_cm; }
++    uint64_t getRegTLB_alt_mode() { return reg_ipr_alt_mode; }
++    bool TLBisExecute() const { return _TLBisExecute; }
++    bool TLBisWrite() const { return _TLBisWrite; }
+ 
+     unsigned getSize() const  { assert(flags.isSet(VALID_SIZE)); return size; }
+     Addr getOffset(int blkSize) const { return getAddr() & (Addr)(blkSize - 1); }
+@@ -538,6 +627,14 @@ class Packet : public Printable
+            bytesValidStart(0), bytesValidEnd(0),
+            time(curTick()), senderState(NULL)
+     {
++        paddr = 0;
++	tc = NULL;
++        reg_ipr_icm = req->getRegTLB_icm();
++        reg_ipr_dtb_asn = req->getRegTLB_dtb_asn();
++        reg_ipr_dtb_cm = req->getRegTLB_dtb_cm();
++        reg_ipr_alt_mode = req->getRegTLB_alt_mode();
++        _TLBisExecute = req->isExecute;
++        _TLBisWrite = req->isWrite;
+         if (req->hasPaddr()) {
+             addr = req->getPaddr();
+             flags.set(VALID_ADDR);
+@@ -559,6 +656,14 @@ class Packet : public Printable
+            bytesValidStart(0), bytesValidEnd(0),
+            time(curTick()), senderState(NULL)
+     {
++        paddr = 0;
++	tc = NULL;
++        reg_ipr_icm = req->getRegTLB_icm();
++        reg_ipr_dtb_asn = req->getRegTLB_dtb_asn();
++        reg_ipr_dtb_cm = req->getRegTLB_dtb_cm();
++        reg_ipr_alt_mode = req->getRegTLB_alt_mode();
++        _TLBisExecute = req->isExecute;
++        _TLBisWrite = req->isWrite;
+         if (req->hasPaddr()) {
+             addr = req->getPaddr() & ~(_blkSize - 1);
+             flags.set(VALID_ADDR);
+@@ -576,11 +681,13 @@ class Packet : public Printable
+      */
+     Packet(Packet *pkt, bool clearFlags = false)
+         :  cmd(pkt->cmd), req(pkt->req),
++	   tc(pkt->tc),
+            data(pkt->flags.isSet(STATIC_DATA) ? pkt->data : NULL),
+            addr(pkt->addr), size(pkt->size), src(pkt->src), dest(pkt->dest),
+            bytesValidStart(pkt->bytesValidStart), bytesValidEnd(pkt->bytesValidEnd),
+            time(curTick()), senderState(pkt->senderState)
+     {
++        paddr = 0;
+         if (!clearFlags)
+             flags.set(pkt->flags & COPY_FLAGS);
+ 
+@@ -614,6 +721,12 @@ class Packet : public Printable
+     {
+         assert(req->hasPaddr());
+         flags = 0;
++        reg_ipr_icm = req->getRegTLB_icm();
++        reg_ipr_dtb_asn = req->getRegTLB_dtb_asn();
++        reg_ipr_dtb_cm = req->getRegTLB_dtb_cm();
++        reg_ipr_alt_mode = req->getRegTLB_alt_mode();
++        _TLBisExecute = req->isExecute;
++        _TLBisWrite = req->isWrite;
+         addr = req->getPaddr();
+         size = req->getSize();
+         time = req->time();
+@@ -672,7 +785,7 @@ class Packet : public Printable
+     void
+     setSize(unsigned size)
+     {
+-        assert(!flags.isSet(VALID_SIZE));
++        //assert(!flags.isSet(VALID_SIZE));
+ 
+         this->size = size;
+         flags.set(VALID_SIZE);
+diff --git a/src/mem/request.hh b/src/mem/request.hh
+index f6406e2..8ac1e6d 100644
+--- a/src/mem/request.hh
++++ b/src/mem/request.hh
+@@ -117,6 +117,10 @@ class Request
+     static const MasterID invldMasterId = USHRT_MAX;
+     /** @} */
+ 
++    //TLB mode//smile
++    bool isExecute;
++    bool isWrite;
++    
+   private:
+     typedef uint8_t PrivateFlagsType;
+     typedef ::Flags<PrivateFlagsType> PrivateFlags;
+@@ -147,6 +151,11 @@ class Request
+      */
+     Addr _paddr;
+ 
++    //TLB register//smile
++    uint64_t _reg_ipr_icm;
++    uint64_t _reg_ipr_dtb_asn;
++    uint64_t _reg_ipr_dtb_cm;
++    uint64_t _reg_ipr_alt_mode;
+     /**
+      * The size of the request. This field must be set when vaddr or
+      * paddr is written via setVirt() or setPhys(), so it is always
+@@ -197,7 +206,9 @@ class Request
+      *  default constructor.)
+      */
+     Request()
+-    {}
++    {
++      isExecute = false;
++    }
+ 
+     /**
+      * Constructor for physical (e.g. device) requests.  Initializes
+@@ -207,11 +218,13 @@ class Request
+     Request(Addr paddr, int size, Flags flags, MasterID mid)
+     {
+         setPhys(paddr, size, flags, mid);
++	isExecute = false;
+     }
+ 
+     Request(Addr paddr, int size, Flags flags, MasterID mid, Tick time)
+     {
+         setPhys(paddr, size, flags, mid, time);
++	isExecute = false;
+     }
+ 
+     Request(Addr paddr, int size, Flags flags, MasterID mid, Tick time, Addr pc)
+@@ -219,6 +232,7 @@ class Request
+         setPhys(paddr, size, flags, mid, time);
+         privateFlags.set(VALID_PC);
+         _pc = pc;
++	isExecute = false;
+     }
+ 
+     Request(int asid, Addr vaddr, int size, Flags flags, MasterID mid, Addr pc,
+@@ -226,6 +240,7 @@ class Request
+     {
+         setVirt(asid, vaddr, size, flags, mid, pc);
+         setThreadContext(cid, tid);
++	isExecute = false;
+     }
+ 
+     ~Request() {}
+@@ -295,11 +310,59 @@ class Request
+     void
+     setPaddr(Addr paddr)
+     {
+-        assert(privateFlags.isSet(VALID_VADDR));
++        //assert(privateFlags.isSet(VALID_VADDR));
+         _paddr = paddr;
+         privateFlags.set(VALID_PADDR);
+     }
+ 
++    //set/get TLB register//smile
++    void
++    setRegTLB_icm(uint64_t reg_ipr_icm)
++    {
++        _reg_ipr_icm = reg_ipr_icm;
++    }
++
++    void
++    setRegTLB_dtb_asn(uint64_t reg_ipr_dtb_asn)
++    {
++        _reg_ipr_dtb_asn = reg_ipr_dtb_asn;
++    }
++
++    void
++    setRegTLB_dtb_cm(uint64_t reg_ipr_dtb_cm)
++    {
++        _reg_ipr_dtb_cm = reg_ipr_dtb_cm;
++    }
++
++    void
++    setRegTLB_alt_mode(uint64_t reg_ipr_alt_mode)
++    {
++        _reg_ipr_alt_mode = reg_ipr_alt_mode;
++    }
++
++    uint64_t
++    getRegTLB_icm()
++    {
++        return _reg_ipr_icm;
++    }
++
++    uint64_t
++    getRegTLB_dtb_asn()
++    {
++        return _reg_ipr_dtb_asn;
++    }
++
++    uint64_t
++    getRegTLB_dtb_cm()
++    {
++        return _reg_ipr_dtb_cm;
++    }
++    
++    uint64_t
++    getRegTLB_alt_mode()
++    {
++        return _reg_ipr_alt_mode;
++    }
+     /**
+      * Generate two requests as if this request had been split into two
+      * pieces. The original request can't have been translated already.
+@@ -330,7 +393,7 @@ class Request
+     Addr
+     getPaddr()
+     {
+-        assert(privateFlags.isSet(VALID_PADDR));
++        //assert(privateFlags.isSet(VALID_PADDR));
+         return _paddr;
+     }
+ 
+@@ -388,7 +451,7 @@ class Request
+     Addr
+     getVaddr()
+     {
+-        assert(privateFlags.isSet(VALID_VADDR));
++        //assert(privateFlags.isSet(VALID_VADDR));
+         return _vaddr;
+     }
+ 
+diff --git a/src/mem/simple_mem.cc b/src/mem/simple_mem.cc
+index a67b482..23b4c03 100644
+--- a/src/mem/simple_mem.cc
++++ b/src/mem/simple_mem.cc
+@@ -53,6 +53,9 @@ SimpleMemory::SimpleMemory(const SimpleMemoryParams* p) :
+     lat_var(p->latency_var), bandwidth(p->bandwidth),
+     isBusy(false), retryReq(false), releaseEvent(this)
+ {
++    printf("[%s:%s:%d] Memory-Side Latency: %lu Bandwidth: %lf\n",
++    	__FILE__, __func__, __LINE__,
++	p->latency, p->bandwidth);
+ }
+ 
+ void
+diff --git a/zbuild.sh b/zbuild.sh
+new file mode 100755
+index 0000000..bc35839
+--- /dev/null
++++ b/zbuild.sh
+@@ -0,0 +1,3 @@
++#!/bin/bash
++
++scons -j 16 ./build/ALPHA_MESI_CMP_directory/gem5.opt
+diff --git a/zgdb.sh b/zgdb.sh
+new file mode 100755
+index 0000000..47af84f
+--- /dev/null
++++ b/zgdb.sh
+@@ -0,0 +1,38 @@
++#!/bin/bash
++
++#DEBUG_FLAG=--debug-flag=LSQUnit,Cache,TLB,CoherentBus,Fetch
++
++
++#
++# Checkpoints: 100 million
++#
++CHECKPOINT=1000
++TAKE="--take-checkpoint=${CHECKPOINT} --at-instruction --simpoint"
++RESTORE="--at-instruction --checkpoint-restore=${CHECKPOINT}"
++
++set -x
++set -e
++
++SPEC2006_ALL="perlbench bzip2 gcc mcf gobmk hmmer sjeng libquantum h264ref omnetpp astar xalancbmk"
++SPEC2006_1="perlbench bzip2"
++SPEC2006_2="gcc mcf"
++SPEC2006_3="gobmk hmmer"
++SPEC2006_4="sjeng libquantum"
++SPEC2006_5="h264ref omnetpp"
++SPEC2006_6="astar xalancbmk"
++CPU_MODE="--cpu-type=inorder --caches"
++TLB_MEMORY_LATENCY=3000ns
++
++NR_MAXINSTS=5000
++
++for i in ${SPEC2006_1}; do
++	BENCH=${i}
++	OUTPUT_DIR=spec2006/${i}_${TLB_MEMORY_LATENCY}
++
++	./build/ALPHA_MESI_CMP_directory/gem5.opt \
++		${DEBUG_FLAG} -d ${OUTPUT_DIR}	\
++		configs/spec2k6_classic/run.py  \
++			${CPU_MODE} -b ${i} \
++			--maxinsts=${NR_MAXINSTS} \
++			-l ${TLB_MEMORY_LATENCY}
++done
